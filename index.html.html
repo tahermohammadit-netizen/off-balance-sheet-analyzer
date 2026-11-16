@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Off-Balance-Sheet Risk Analyzer</title>
+<style>
+:root{color-scheme:dark;--bg:#07142b;--panel:#0d2147;--panel2:#112a59;--line:#1e3d78;--text:#e8f0ff;--mute:#8fa8d6;--blue:#0a7cff;--sky:#4cc3ff;--amber:#ffb547;--rep:#2f8bff;--hyp:#ffb547;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 500px at 85% -10%,#10357a 0,transparent 60%),var(--bg);color:var(--text);font:16px/1.55 "Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:0 0 8px;letter-spacing:-.02em}
+h2{font-size:22px;margin:0 0 6px}
+p{margin:0 0 10px}
+.sub{color:var(--mute);max-width:70ch}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 26px}
+.tag{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:14px;border:1px solid var(--line);background:var(--panel)}
+.dot{width:10px;height:10px;border-radius:50%}
+.rep .dot{background:var(--rep)}.hyp .dot{background:var(--hyp)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.kpi{background:var(--panel2);border-radius:12px;padding:18px;border-left:5px solid var(--rep)}
+.kpi.h{border-left-color:var(--hyp)}
+.kpi .n{font-size:46px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.kpi.h .n{color:var(--hyp)}.kpi:not(.h) .n{color:var(--sky)}
+.kpi small{color:var(--mute);display:block}
+.badge{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;display:inline-block;margin-bottom:6px}
+.kpi .badge{background:#12408a;color:#cfe4ff}.kpi.h .badge{background:#5a3d0c;color:#ffd9a0}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-top:6px}
+label{display:block;font-size:14px;color:var(--mute)}
+label b{color:var(--text);float:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--blue);margin-top:6px}
+.reported-in input{accent-color:var(--rep)}.hyp-in input{accent-color:var(--hyp)}
+.sep{grid-column:1/-1;font-size:14px;font-weight:600;padding-top:6px;border-top:1px dashed var(--line)}
+button{font:inherit;cursor:pointer;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px}
+button:hover,button.on{background:var(--blue);border-color:var(--blue)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.bar-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.chartbox{overflow-x:auto}
+svg text{fill:var(--text);font-family:inherit}
+.formula{font-family:Consolas,Menlo,monospace;background:#081a3a;border-radius:8px;padding:10px 12px;font-size:14px;margin:8px 0;overflow-x:auto;white-space:nowrap}
+details{background:var(--panel2);border-radius:10px;margin-bottom:10px;border:1px solid var(--line)}
+summary{cursor:pointer;padding:12px 16px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+";display:inline-block;width:22px;color:var(--sky);font-weight:700}
+details[open] summary::before{content:"\2212"}
+details>div{padding:0 16px 14px 38px;color:#cfdcf5}
+ul{margin:6px 0;padding-left:20px}
+.note{font-size:13px;color:var(--mute);border-left:3px solid var(--line);padding-left:12px;margin-top:12px}
+.warn{border-left-color:var(--amber);color:#ffd9a0}
+.delta{font-size:15px;margin-top:14px}
+.delta b{color:var(--hyp)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--panel2);border-radius:12px;padding:16px;border-top:3px solid var(--hyp)}
+.card h3{margin:0 0 6px;font-size:17px}
+footer{color:var(--mute);font-size:13px;text-align:center;margin-top:30px}
+textarea{width:100%;min-height:170px;background:#081a3a;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font:14px/1.5 Consolas,Menlo,monospace;resize:vertical}
+textarea:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+button.go{background:var(--blue);border-color:var(--blue);font-weight:600}
+button.go:hover{background:#2a92ff}
+.annot{background:#081a3a;border-radius:10px;padding:14px;white-space:pre-wrap;line-height:1.9;font-size:15px}
+.hl{border-radius:4px;padding:1px 2px}
+.c-rep{background:rgba(76,195,255,.18)}.c-off{background:rgba(255,181,71,.2)}.c-con{background:rgba(255,123,114,.2)}.c-eq{background:rgba(91,224,168,.18)}.c-unk{background:rgba(143,168,214,.2)}
+.kw{font-weight:700;text-decoration:underline;text-decoration-color:var(--sky);text-underline-offset:3px}
+.amt{background:#fff;color:#07142b;border-radius:3px;padding:0 3px;font-weight:700}
+.find{background:var(--panel2);border-radius:12px;padding:14px 16px;border-left:5px solid;margin-bottom:12px}
+.cls{font-weight:700;font-size:13px;padding:2px 9px;border-radius:6px;color:#07142b}
+.chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 9px;color:var(--mute);margin-left:6px;white-space:nowrap}
+.src{margin:8px 0;padding:8px 10px;background:#081a3a;border-radius:8px;font-size:14px}
+.amtrow{font-size:14px;margin:6px 0;padding:8px 10px;background:#0a1f45;border-radius:8px}
+.amtrow label{color:var(--text);display:flex;gap:8px;align-items:flex-start}
+.amtrow label input{margin-top:5px}
+.amtrow .ctx{color:var(--mute);font-size:13px;margin-top:4px}
+.imp{font-size:14px;color:#cfdcf5;margin-top:8px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.stat{display:inline-flex;gap:8px;align-items:center;font-size:14px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.whatif{background:#081a3a;border:1px dashed var(--hyp);border-radius:12px;padding:14px;margin:14px 0}
+.whatif b{color:var(--hyp)}
+.rules summary{font-size:15px}
+.pill{display:inline-block;font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;border:1px solid}
+.pr{color:#cfe4ff;background:#12408a;border-color:#2f8bff}
+.ph{color:#ffd9a0;background:#5a3d0c;border-color:#ffb547}
+.cond{background:var(--panel2);border-radius:12px;padding:16px;border-top:4px solid var(--rep)}
+.cond.h{border-top-color:var(--hyp)}
+.cond h3{margin:0 0 4px;font-size:17px}
+.cond .def{color:#cfdcf5;font-size:14px;margin-bottom:10px}
+.res{margin:16px 0;padding:14px 16px;border-radius:12px;border:1px solid var(--rep);background:#0a2a5c;font-size:16px}
+.res.h{border-color:var(--hyp);background:#3a2a0b}
+.res b{display:block;font-size:18px;margin-bottom:2px}
+.cmp{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.cmp th,.cmp td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.cmp th{color:var(--mute);font-weight:600}
+.cmp th.cr{color:var(--sky)}.cmp th.ch{color:var(--hyp)}
+.cmp td.cr{background:rgba(47,139,255,.08)}.cmp td.ch{background:rgba(255,181,71,.08)}
+.ev{display:flex;gap:8px;flex-wrap:wrap}
+.ev span{font-size:13px;border:1px solid var(--line);border-radius:8px;padding:3px 9px;background:#0a1f45}
+.hyp-controls{background:#081a3a;border:1px dashed var(--hyp);border-radius:12px;padding:12px 14px;margin:12px 0}
+.hyp-controls label{display:flex;gap:8px;align-items:flex-start;color:var(--text);margin:4px 0}
+.hyp-controls input{margin-top:4px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.seg button{font-size:13px;padding:5px 10px}
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+.calc input{width:100%;background:#081a3a;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit}
+.calc input:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.calc label{font-size:13px}
+.flag{font-size:13px;color:#ffd9a0;margin-top:8px}
+.out{font-size:13px;color:#cfdcf5;margin:4px 0}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:14px 0}
+.kpi.sm .n{font-size:30px}
+.kpi.sm{padding:14px}
+.bl{font-size:14px;margin:12px 0 4px}
+.bar{display:flex;height:30px;border-radius:6px;overflow:hidden;background:#081a3a}
+.bar span{display:block;height:100%}
+.step{margin:10px 0 2px;font-weight:600;font-size:15px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.lim{background:#3a2a0b;border:1px solid var(--hyp);border-radius:12px;padding:14px 16px;font-size:14px;color:#ffe3b8}
+.lim b{color:var(--hyp);display:block;font-size:16px;margin-bottom:4px}
+.mb{margin:6px 0 14px}
+.mb .lab{font-size:13px;color:var(--mute);margin:8px 0 3px}
+.mb .bar{height:26px;position:relative}
+.mb .bar span{display:flex;align-items:center;padding-left:8px;font-weight:700;font-size:14px;color:#07142b}
+.coh{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.coh div{background:var(--panel2);border-radius:12px;padding:14px;border-top:3px solid var(--rep);font-size:14px}
+.coh div.w{border-top-color:var(--hyp)}
+.c-c810{background:rgba(182,156,255,.22)}
+.c-lfc{background:rgba(138,180,255,.22)}.c-hist{background:rgba(255,158,203,.2)}
+.b{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:6px;border:1px solid;white-space:nowrap}
+.b-rep{color:#cfe4ff;background:#12408a;border-color:#2f8bff}
+.b-hyp{color:#ffd9a0;background:#5a3d0c;border-color:#ffb547}
+.b-ai{color:#e3d9ff;background:#3a2a6b;border-color:#b69cff}
+.b-nc{color:#ffc9c5;background:#4a1f24;border-color:#ff7b72}
+.b-ok{color:#c8f5e2;background:#0f4a37;border-color:#5be0a8}
+.b-part{color:#ffe3b8;background:#4a3510;border-color:#ffb547}
+.b-rb{color:#d6e2f7;background:#1c2f57;border-color:#8fa8d6}
+.aihead{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.stp{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;text-align:left;color:var(--text);font:inherit;display:block;width:100%}
+.stp:hover{background:#163470}
+.stp.on{border-color:var(--sky);box-shadow:0 0 0 1px var(--sky);background:#163470}
+.stp .num{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--blue);align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:6px}
+.stp b{display:block;font-size:15px;margin-bottom:6px}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:10px 0}
+.ctl select{width:100%;margin-top:6px;background:#081a3a;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit}
+.ctl select:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.panel2{background:var(--panel2);border-radius:12px;padding:16px;margin-top:12px;border:1px solid var(--line)}
+.nc-box{background:#2a1418;border:1px dashed #ff7b72;border-radius:12px;padding:14px 16px;font-size:14px;color:#ffd5d2;margin-top:12px}
+.nc-box b{color:#ff9d96}
+.src li{margin:6px 0;font-size:14px}
+.urlin{width:100%;margin-top:6px;background:#081a3a;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit}
+.urlin:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:disabled:hover{background:var(--panel2);border-color:var(--line)}
+button.go:disabled:hover{background:var(--blue);border-color:var(--blue)}
+.ok-box{background:#0d2a21;border:1px solid #5be0a8;border-radius:12px;padding:14px 16px;font-size:14px;color:#c8f5e2;margin-top:12px}
+.ld-box{background:#0d2147;border:1px solid var(--sky);border-radius:12px;padding:14px 16px;font-size:14px;color:#cfe4ff;margin-top:12px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--sky);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.urlin:disabled,.ctl select:disabled{opacity:.5;cursor:not-allowed}
+.strip{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px}
+.sc{flex:1;min-width:150px;background:var(--panel2);border:1px solid var(--line);border-top:3px solid var(--rep);border-radius:12px;padding:10px 12px}
+.sc.h{border-top-color:var(--hyp)}.sc .v{font-size:26px;font-weight:700;letter-spacing:-.02em}.sc small{color:var(--mute);display:block;font-size:12px}
+.sbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:14px;flex-wrap:wrap}
+.sbar .t{width:220px;flex:none}.sbar .tr{flex:1;min-width:120px;background:#081a3a;border-radius:6px;height:22px}.sbar .tr span{display:block;height:100%;border-radius:6px}.sbar .p{width:56px;text-align:right;font-weight:700}
+#navRow button{font-size:14px}
+.b-in{color:#c9f2f0;background:#0b3d3a;border-color:#4fd1c5}
+body:not(.gen) .gen-only{display:none}
+body.gen .meta-only{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Off-Balance-Sheet Risk Analyzer</h1>
+  <p class="sub" id="pageSub">HBS case &ldquo;Meta Platforms: Accounting for the AI Arms Race.&rdquo; Explore how consolidating the Hyperion financing would change Meta&rsquo;s debt-to-equity ratio. All amounts in USD billions.</p>
+  <div class="bar-row" id="modeBar" role="group" aria-label="Analysis mode" style="margin:14px 0 6px"><button data-mode="meta" class="on go">Meta&ndash;Hyperion Case Study</button><button data-mode="gen">Analyze Another Company</button></div>
+  <section id="genPanel" class="gen-only">
+    <h2>Company Inputs <span class="b b-in">ANALYST INPUT</span></h2>
+    <p class="sub">Enter the company&rsquo;s own figures from its balance sheet. This tool does not retrieve or verify them. Amounts in USD billions.</p>
+    <div class="ctl">
+      <label>Company name<input id="gName" class="urlin" type="text" placeholder="e.g. Example Co."></label>
+      <label>Reporting year<input id="gYear" class="urlin" type="text" placeholder="e.g. 2025"></label>
+      <label>Total debt (USD billions)<input id="gD" class="urlin" type="number" min="0" step="any" placeholder="e.g. 100"></label>
+      <label>Total equity (USD billions)<input id="gE" class="urlin" type="number" min="0" step="any" placeholder="e.g. 200"></label>
+    </div>
+    <div class="bar-row"><button id="gDemo">Load fictional example</button></div>
+    <p class="note" id="gMsg"></p>
+  </section>
+  <div class="legend">
+    <span class="tag rep" id="lgRep"><span class="dot"></span>Reported: figures taken from the case</span>
+    <span class="tag hyp"><span class="dot"></span>Hypothetical: our adjustment, not reported by Meta</span>
+    <span class="tag"><span class="dot" style="background:#8fa8d6"></span>Rule-based: text-pattern detection, not AI</span>
+  </div>
+
+  <div class="res" id="howto" style="margin-top:14px"><b>How to read this prototype</b>1. The detector reads footnote text for VIEs, leases and guarantees using text-pattern rules. 2. Priority Review lists the most relevant passages. 3. The Adjusted Leverage Calculator shows hypothetical ratios. The ratios use the case-study figures and the sliders. They are <u>not</u> automatically derived from independently validated filings.</div>
+  <div class="strip" id="topStrip" aria-label="Key ratios"></div>
+  <div class="bar-row" id="navRow"><button data-go="obs">1 Detector</button><button data-go="priority">2 Priority Review</button><button data-go="leverage" class="meta-only">3 Adjusted Leverage</button><button data-go="detected">3b Detected Amounts</button><button data-go="acct">4 Accounting Analysis</button><button data-go="tech">5 Technical Information</button></div>
+
+  <section id="obs">
+    <h2>Off-Balance-Sheet Detector</h2>
+    <p class="sub" id="obsIntro">The detector is preloaded with an editable, case-based Meta&ndash;Hyperion summary (not the original Exhibit 8 text). Edit it, paste your own footnote text, or press Load Meta Hyperion Case to restore the sample. Plain text-pattern rules flag VIEs, leases, guarantees, commitments, equity investments and debt, and everything runs in your browser. Nothing is sent anywhere.</p>
+    <textarea id="fn" aria-label="Financial statement footnotes" placeholder="Paste financial statement footnotes here..."></textarea>
+    <div class="bar-row">
+      <button class="go" id="analyze">Analyze disclosures</button>
+      <button id="sample">Load illustrative sample</button>
+      <button id="casebtn" class="meta-only">Load Meta Hyperion Case</button>
+      <button id="clearfn">Clear</button>
+    </div>
+    <div id="caseNote" class="meta-only" style="display:none;border-left:3px solid var(--amber);background:#081a3a;padding:10px 12px;border-radius:8px;margin-top:12px;font-size:14px;color:#ffd9a0"><b>Case-based summary, not the original Exhibit 8 text.</b> The wording below summarizes the case facts. Amounts are listed separately and are not added together. The summary does not say how the lease commitments, guarantee threshold and maximum exposure overlap, so none of them is treated as debt.</div>
+    <div id="obsOut"></div>
+    <details class="rules"><summary>How the rules work</summary><div>
+      <ul>
+        <li>Text is split into passages. A passage is flagged when it contains a keyword pattern for a topic (shown underlined).</li>
+        <li>Amounts are extracted only when written with $, US$ or USD, or as &ldquo;N million/billion dollars&rdquo;. They convert to USD billions only when the unit is written in the same passage. Otherwise they are shown as written.</li>
+        <li>Classification checks cues in this order: guarantee or contingency wording (contingent exposure), commitment or &ldquo;not recorded&rdquo; wording (off-balance-sheet commitment), equity-interest wording (equity investment), recorded or debt wording (reported liability), then &ldquo;not consolidated&rdquo; wording (off-balance-sheet). If no cue matches, the passage is marked for manual review.</li>
+        <li>Guarantees and commitments are never added to debt automatically. You can tick an amount to test it as hypothetical debt.</li>
+      </ul>
+      <p class="note">These are keyword rules, not accounting judgement. Always read the passage and the full footnote.</p></div></details>
+  </section>
+
+  <section id="priority">
+    <h2>Priority Review <span class="b b-rb">RULE-BASED</span></h2>
+    <p class="sub">The most relevant VIE, lease and guarantee passages found in the text above, ranked by a keyword score. Amounts are extracted by text patterns exactly as written. Classifications are heuristic, not confirmed liabilities, and amounts may overlap.</p>
+    <div id="priorityOut"><p class="note">Run the detector to see priority passages.</p></div>
+  </section>
+
+  <section id="leverage" class="meta-only">
+    <h2>Adjusted Leverage Calculator</h2>
+    <p class="sub">Baseline and three hypothetical scenarios, computed from the case-study inputs and the sliders in the Accounting Analysis section. <button id="goInputs" style="padding:3px 10px;font-size:13px">Go to case inputs</button></p>
+    <div class="aihead"><span class="b b-rep">REPORTED: case baseline</span><span class="b b-hyp">HYPOTHETICAL: stress scenarios, not Meta&rsquo;s liabilities</span><span class="b b-rb">RULE-BASED: detector suggests candidate amounts</span></div>
+    <div class="grid3" id="scenCards"></div>
+    <div id="scenBars"></div>
+    <p class="note" id="scenNote"></p>
+    <h3 style="font-size:17px;margin:18px 0 6px">Explore combinations</h3>
+    <p class="note">The detector suggests candidate amounts; an analyst must confirm the source and accounting treatment. These are stress tests, NOT Meta reported liabilities. Never sum the maximum exposure, lease commitments and guarantee thresholds without checking overlap.</p>
+    <div class="bar-row"><label style="color:var(--text)"><input type="checkbox" id="adjVie"> Hypothetically consolidate Hyperion VIE ($27B venture bonds + $2.5B non-controlling interest; case-based inputs)</label></div>
+    <div class="bar-row"><label style="color:var(--text)"><input type="checkbox" id="adjLease"> Separately stress-test future lease commitments ($12.31B; assumes full amount becomes incremental debt)</label></div>
+    <div class="bar-row"><label style="color:var(--text)"><input type="checkbox" id="adjGuarantee"> Separately stress-test RVG threshold ($28B; extreme assumption, NOT an expected payment)</label></div>
+    <p class="note">Select at most ONE of the lease or guarantee scenarios. The maximum exposure to loss ($45.95B) is a disclosure measure that may overlap both; it is never automatically added. These case amounts are not automatically validated against any filing.</p>
+    <div id="adjResult" class="res h" aria-live="polite"></div>
+    <p class="note" id="adjSource"></p>
+  </section>
+
+  <section id="detected">
+    <h2>Detected Amounts &mdash; Analyst-Reviewed Leverage</h2>
+    <p class="sub" id="detIntro">Reads the amounts extracted from the <b>current detector text</b>. Nothing is included automatically: you select an amount and confirm how to treat it. Results are hypothetical stress tests, not reported liabilities. The Meta&ndash;Hyperion case scenarios above are unchanged.</p>
+    <div class="aihead" id="detChips"><span class="b b-rb">RULE-BASED: detector suggests amounts and roles</span><span class="b b-hyp">HYPOTHETICAL: analyst-confirmed stress test</span><span class="b b-rep">REPORTED: baseline from the inputs</span></div>
+    <div id="detList"></div>
+    <div id="detResult"></div>
+  </section>
+
+  <h2 id="acct" style="font-size:26px;margin:36px 0 6px">Accounting Analysis</h2>
+  <p class="sub" style="margin-bottom:16px">Case-study data, the ASC 810 and ASC 842 analyses, and the detailed calculators.</p>
+  <section id="case" class="meta-only">
+    <h2>Case-Study Data and Conclusions</h2>
+    <h3 style="font-size:19px;margin:24px 0 4px">Meta&ndash;Hyperion case-study data <span class="b b-rep">REPORTED (case)</span></h3>
+    <p class="sub" style="font-size:14px">Taken from the HBS case summary, not from a live filing. Amounts in USD billions, shown separately and never added together because some overlap.</p>
+    <div class="chartbox"><table class="cmp"><thead><tr><th>Amount</th><th>What the case disclosure describes</th></tr></thead><tbody>
+      <tr><th>$4.30B</th><td>Contribution at Venture formation (historical transaction)</td></tr>
+      <tr><th>$2.55B</th><td>One-time distribution received at formation (historical transaction)</td></tr>
+      <tr><th>$27B</th><td>Bonds issued by the Venture (the Venture&rsquo;s debt)</td></tr>
+      <tr><th>$12.31B</th><td>Initial lease commitments (future commitment, not a reported debt amount)</td></tr>
+      <tr><th>about $28B</th><td>Residual value guarantee initial threshold (a disclosed threshold, not a recognized liability)</td></tr>
+      <tr><th>$45.95B</th><td>Disclosed maximum exposure to loss</td></tr>
+      <tr><th>$1.83B</th><td>Role not classified in this summary. Use the Off-Balance-Sheet Detector on the original text.</td></tr>
+    </tbody></table></div>
+    <div class="grid" style="margin-top:16px">
+      <div class="kpi"><span class="badge">REPORTED</span><small>Debt-to-equity, as reported</small><div class="n" id="aiR"></div><small id="aiRf"></small></div>
+      <div class="kpi h"><span class="badge">HYPOTHETICAL</span><small>Debt-to-equity if Hyperion were consolidated</small><div class="n" id="aiH"></div><small id="aiHf"></small></div>
+    </div>
+    <p class="note" id="aiRn"></p>
+
+    <h3 style="font-size:19px;margin:24px 0 4px">Source references</h3>
+    <ul class="src">
+      <li><span class="b b-ok">Provided</span> HBS case &ldquo;Meta Platforms: Accounting for the AI Arms Race&rdquo; and the case figures supplied for this project.</li>
+      <li><span class="b b-ok">Provided</span> Exhibit 8 disclosure text you paste into the Off-Balance-Sheet Detector.</li>
+      <li><span class="b b-rb">Standard</span> ASC 810 (consolidation), ASC 842 (leases) and ASC 250 (changes in estimates), as summarized in the sections below.</li>
+      <li><span class="b b-nc">Not connected</span> Meta Form 10-K and Form 10-Q filings. Not available in this prototype.</li>
+    </ul>
+
+    <h3 style="font-size:19px;margin:24px 0 4px">Accounting conclusions</h3>
+    <div class="cols">
+      <div class="card" style="border-top-color:var(--rep)"><span class="b b-rep">REPORTED</span><h3 style="margin-top:8px">Hyperion is not consolidated</h3><p>Per the case summary, Meta concludes it lacks the required power, so it is not the primary beneficiary under ASC 810. Both conditions are required.</p></div>
+      <div class="card" style="border-top-color:var(--rep)"><span class="b b-rep">REPORTED (per brief)</span><h3 style="margin-top:8px">Leases treated as operating</h3><p>The Hyperion leases are treated as operating leases. The $12.31B is a future lease commitment, not a reported debt amount.</p></div>
+      <div class="card"><span class="b b-hyp">HYPOTHETICAL</span><h3 style="margin-top:8px">Consolidation scenario</h3><p id="aiHyp"></p></div>
+      <div class="card"><span class="b b-hyp">HYPOTHETICAL</span><h3 style="margin-top:8px">Finance-lease scenario</h3><p>Finance-lease classification would need at least one of five criteria to be met. The case summary does not provide enough evidence to say any is met.</p></div>
+    </div>
+
+    <h3 style="font-size:19px;margin:24px 0 4px">Analyst recommendations</h3>
+    <p class="sub" style="font-size:14px"><span class="b b-rb">RULE-BASED</span> General guidance written for this case study. It is not AI-generated and not investment advice.</p>
+    <ul class="src">
+      <li>Show leverage on both bases, reported and hypothetical consolidated, and label each.</li>
+      <li>Track guarantee thresholds and maximum exposure to loss separately. Do not add them to debt.</li>
+      <li>Check lease commencement timing, since classification is assessed when a lease commences.</li>
+      <li>Confirm every amount against the original filing text, because this page uses a case summary.</li>
+    </ul>
+  </section>
+
+
+  <section id="inputsSec" class="meta-only">
+    <h2>Inputs</h2>
+    <p class="sub">Sliders start at the case figures. Move them to test sensitivity, then reset.</p>
+    <div class="inputs">
+      <div class="sep" style="color:var(--sky);border:0;padding:0">Reported figures (2025)</div>
+      <div class="reported-in"><label>Long-term debt <b id="vD"></b></label><input id="D" type="range" min="0" max="120" step="0.5" value="59"></div>
+      <div class="reported-in"><label>Stockholders&rsquo; equity <b id="vE"></b></label><input id="E" type="range" min="50" max="400" step="0.5" value="217"></div>
+      <div class="sep" style="color:var(--hyp)">Hypothetical consolidation adjustments</div>
+      <div class="hyp-in"><label>Hyperion bonds added to debt <b id="vB"></b></label><input id="B" type="range" min="0" max="60" step="0.5" value="27"></div>
+      <div class="hyp-in"><label>Hyperion non-controlling interest added to equity <b id="vN"></b></label><input id="N" type="range" min="0" max="20" step="0.5" value="2.5"></div>
+    </div>
+    <div class="bar-row"><button id="reset">Reset to case figures</button></div>
+  </section>
+
+  <section class="meta-only">
+    <h2>Debt-to-equity: reported vs. hypothetical</h2>
+    <div class="grid">
+      <div class="kpi"><span class="badge">REPORTED</span><div class="n" id="rR">27.2%</div><small id="rF"></small></div>
+      <div class="kpi h"><span class="badge">HYPOTHETICAL</span><div class="n" id="hR">39.2%</div><small id="hF"></small></div>
+    </div>
+    <p class="delta" id="delta"></p>
+    <div class="bar-row" role="group" aria-label="Chart view">
+      <button data-v="ratio" class="on">Ratio comparison</button>
+      <button data-v="build">Debt and equity build-up</button>
+    </div>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 760 340" width="100%" role="img" aria-label="Comparison chart"></svg></div>
+    <p class="note">Debt-to-equity here = long-term debt ÷ stockholders&rsquo; equity, as defined in the project brief. The hypothetical case assumes the Hyperion bonds and non-controlling interest were consolidated onto Meta&rsquo;s balance sheet. Meta did not report this.</p>
+  </section>
+
+  <section>
+    <h2>ASC 810: the VIE consolidation test</h2>
+    <p class="sub">Whether Hyperion is consolidated depends on a two-step analysis. Open each step. This is a general summary of the framework, not a conclusion about Meta&rsquo;s actual accounting.</p>
+    <details open><summary>Step 1: Is the entity a variable interest entity (VIE)?</summary><div>
+      <p>An entity is a VIE if any one of these holds:</p>
+      <ul>
+        <li>Its equity at risk is not enough to finance its activities without extra subordinated support.</li>
+        <li>Equity holders as a group lack the power to direct the activities that most affect performance, or lack the obligation to absorb losses or the right to receive returns.</li>
+        <li>Voting rights are disproportionate to economic interests, and substantially all activities involve or are conducted for the investor with fewer voting rights.</li>
+      </ul></div></details>
+    <details><summary>Step 2: Is Meta the primary beneficiary?</summary><div>
+      <p>The primary beneficiary consolidates the VIE. It must have both:</p>
+      <ul>
+        <li><b>Power</b> to direct the activities that most significantly affect the VIE&rsquo;s economic performance.</li>
+        <li><b>Economics</b>: the obligation to absorb losses, or the right to receive benefits, that could be significant to the VIE.</li>
+      </ul>
+      <p>Both conditions are required. If another party meets both, that party consolidates instead.</p></div></details>
+    <details><summary>What changes if Meta consolidates</summary><div>
+      <ul>
+        <li>The VIE&rsquo;s assets and liabilities, including its bonds, come onto Meta&rsquo;s balance sheet.</li>
+        <li>Equity held by other investors appears as non-controlling interest.</li>
+        <li>Leverage ratios rise, which is what the hypothetical case above shows.</li>
+      </ul></div></details>
+    <p class="note">The case&rsquo;s Hyperion figures ($27B bonds, $2.5B non-controlling interest) are used only to size the hypothetical adjustment.</p>
+  </section>
+
+  <section>
+    <h2>Risks from leases and residual value guarantees</h2>
+    <p class="sub">Select a risk to read how it could affect leverage and disclosure. No dollar amounts are assumed here: the case figures above do not quantify these items.</p>
+    <div class="bar-row" id="riskTabs"></div>
+    <div class="cols" id="riskBody"></div>
+    <p class="note warn">Hypothetical discussion only. Check the case exhibits and Meta&rsquo;s filings for the actual lease commitments and guarantee terms before putting numbers on any of these risks.</p>
+  </section>
+
+  <section id="a810" class="meta-only">
+    <h2>ASC 810 Consolidation Assessment</h2>
+    <p class="sub">Meta consolidates a VIE only if it is the primary beneficiary, which requires <b>both</b> conditions below. Switch between the reported conclusion and a hypothetical scenario to see how the outcome depends on the power condition.</p>
+    <div class="bar-row" role="group" aria-label="Assessment view">
+      <button data-m="rep" class="on">Reported conclusion</button>
+      <button data-m="hyp">Hypothetical: Meta obtains the required power</button>
+    </div>
+    <div class="hyp-controls" id="a810hyp" style="display:none">
+      <b style="color:var(--hyp)">Hypothetical scenario controls (not Meta&rsquo;s reported position)</b>
+      <label><input type="checkbox" id="ck810p" checked> Meta has the power to direct the activities that most significantly affect Hyperion&rsquo;s economic performance</label>
+      <label><input type="checkbox" id="ck810e" checked> Meta has the obligation to absorb potentially significant losses or the right to receive potentially significant benefits</label>
+    </div>
+    <div class="cols" id="a810cards"></div>
+    <div id="a810res"></div>
+    <h3 style="font-size:17px;margin:6px 0 8px">Reported vs. hypothetical, side by side</h3>
+    <div class="chartbox" id="a810tbl"></div>
+    <p class="note">The reported conclusion and the economic exposure described here come from the case summary supplied for this project, not from the original exhibit text. The hypothetical column shows only what the test would say if the stated condition changed. It is not a claim that Meta must or will consolidate Hyperion. The case amounts are listed separately and are not added together, because they may overlap.</p>
+  </section>
+
+  <section id="a842" class="meta-only">
+    <h2>ASC 842 Lease Assessment</h2>
+    <p class="sub">A lessee classifies a lease as a finance lease if <b>any one</b> of five criteria is met. Otherwise it is an operating lease. Explore each criterion below. Nothing is marked as met unless you choose to assume it.</p>
+    <p><b>Hyperion lease facts from the case summary:</b></p>
+    <div class="ev" style="margin-bottom:14px"><span>Initial four-year terms starting in 2029</span><span>Renewal options up to 20 years</span><span>Residual value guarantees: initial threshold of about $28 billion</span></div>
+    <div class="res"><b>Reported treatment: operating leases</b>As given in the project brief, the Hyperion leases are treated as operating leases. Classification is assessed when a lease commences, and these leases start in 2029, so leases not yet commenced are generally disclosed rather than recognized on the balance sheet.</div>
+    <h3 style="font-size:17px;color:var(--hyp);margin:18px 0 8px">Hypothetical finance-lease explorer (your assumptions, not Meta&rsquo;s reported position)</h3>
+    <div class="cols" id="a842cards"></div>
+    <div class="bar-row"><button id="a842reset">Reset assessment</button></div>
+    <div id="a842res"></div>
+    <h3 style="font-size:17px;margin:6px 0 8px">Reported operating lease vs. hypothetical finance lease</h3>
+    <div class="chartbox" id="a842tbl"></div>
+    <p class="note">The case summary gives partial inputs for criteria 3 and 4 and none for criteria 1, 2 and 5, so it does not support concluding that any criterion is met. The 75% and 90% reference points come from commonly cited ASC 842 implementation guidance and are not bright-line rules. Calculators use only numbers you type in, and no amounts from this section are added to the dashboard ratio.</p>
+  </section>
+
+  <section id="k842" class="meta-only">
+    <h2>ASC 842 &mdash; Lease Financial Calculator</h2>
+    <div class="res h"><b>Hypothetical calculation, not Meta&rsquo;s reported financial statements</b>This uses the professor&rsquo;s simplified assumptions: level payments at the end of each year, straight-line amortization of the right-of-use asset, and no initial direct costs, incentives or separate residual guarantee payments. The 4-year commitment is stated in the case, while the 15-year finance-lease term is a hypothetical extension. All amounts are in USD billions.</div>
+    <div class="inputs">
+      <div class="hyp-in"><label>Lease term <b id="vLn"></b></label><input id="Ln" type="range" min="1" max="30" step="1" value="15"></div>
+      <div class="hyp-in"><label>Annual discount rate <b id="vLr"></b></label><input id="Lr" type="range" min="0" max="15" step="0.1" value="6.6"></div>
+      <div class="hyp-in"><label>Annual payment <b id="vLp"></b></label><input id="Lp" type="range" min="0.5" max="8" step="0.0025" value="3.0775"><small style="color:var(--mute)">Default: $12.31B / 4 = $3.0775B</small></div>
+    </div>
+    <div class="bar-row"><button id="k842reset">Reset to professor&rsquo;s assumptions</button></div>
+    <div class="grid3" id="k842k"></div>
+    <h3 style="font-size:17px;margin:14px 0 4px">Year-one expense: finance vs. operating (hypothetical)</h3>
+    <div id="k842b"></div>
+    <h3 style="font-size:17px;margin:18px 0 4px">Formulas and intermediate steps</h3>
+    <div id="k842f"></div>
+    <p class="note">Simplification: with level payments, the straight-line operating-lease charge equals the annual payment. Results are not added to the dashboard debt-to-equity ratio, and the dashboard calculations are unchanged.</p>
+  </section>
+
+  <section id="x250" class="meta-only">
+    <h2>Server Depreciation &mdash; ASC 250 Estimate Sensitivity</h2>
+    <p class="sub"><b>Case question 4.1:</b> &ldquo;A 5.5-year useful life signals confidence; a four-year lease term signals uncertainty. Jointly coherent? Recompute 2025 operating income and margin (Exhibit 4) with a four-year life.&rdquo; All amounts in USD billions, straight-line with zero residual value.</p>
+    <div class="legend" style="margin:10px 0">
+      <span class="tag rep"><span class="dot"></span>Reported: revenue $201B, operating income $83B</span>
+      <span class="tag hyp"><span class="dot"></span>Hypothetical: depreciation-life sensitivity</span>
+    </div>
+    <div class="inputs">
+      <div class="hyp-in"><label>Useful life (baseline) <b id="vX1"></b></label><input id="X1" type="range" min="1" max="10" step="0.1" value="5.5"></div>
+      <div class="hyp-in"><label>Alternative useful life <b id="vX2"></b></label><input id="X2" type="range" min="1" max="10" step="0.1" value="4"></div>
+      <div class="hyp-in"><label>Assumed depreciable asset base <b id="vX3"></b></label><input id="X3" type="range" min="50" max="300" step="1" value="176"><small style="color:var(--mute)">Default: 2025 net PP&amp;E of $176B</small></div>
+    </div>
+    <div class="bar-row"><button id="xreset">Reset to case figures</button></div>
+    <div class="two">
+      <div>
+        <div class="grid3" id="xk" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))"></div>
+      </div>
+      <div class="lim"><b>Accounting limitation</b>The $176 billion is Meta&rsquo;s <u>total net PP&amp;E</u>, not the gross depreciable cost of its servers. Applying one useful life to the whole balance is a simplified sensitivity exercise. It is <u>not</u> a GAAP-compliant restatement and not an estimate of actual server depreciation. A real change in estimate would be accounted for prospectively under ASC 250 and would apply only to the affected assets.</div>
+    </div>
+    <h3 style="font-size:17px;margin:14px 0 4px">Reported vs. hypothetical</h3>
+    <div class="two">
+      <div class="mb"><div class="lab" style="color:var(--text);font-weight:600">Operating income ($B)</div><div id="xci"></div></div>
+      <div class="mb"><div class="lab" style="color:var(--text);font-weight:600">Operating margin (% of $201B revenue)</div><div id="xcm"></div></div>
+    </div>
+    <h3 style="font-size:17px;margin:10px 0 4px">Calculation steps</h3>
+    <div id="xf"></div>
+    <h3 style="font-size:20px;margin:22px 0 8px">Accounting coherence</h3>
+    <div class="coh">
+      <div><b>Longer server life</b><p style="margin:6px 0 0">Extending server useful life to 5.5 years suggests confidence in long-term economic use.</p></div>
+      <div class="w"><b>Four-year Hyperion leases</b><p style="margin:6px 0 0">Using four-year initial Hyperion leases suggests contractual flexibility and uncertainty.</p></div>
+      <div><b>Not automatically inconsistent</b><p style="margin:6px 0 0">These positions are not automatically inconsistent because asset depreciation and lease classification assess different economic and contractual factors.</p></div>
+      <div class="w"><b>Still deserves scrutiny</b><p style="margin:6px 0 0">However, their combined effect deserves scrutiny in financial risk analysis.</p></div>
+    </div>
+    <p class="note">Only the case figures listed above are used. Results are hypothetical and are not added to the dashboard debt-to-equity ratio.</p>
+  </section>
+
+  <details id="tech" style="margin-top:30px"><summary style="padding:14px 18px;font-size:18px">Technical Information: SEC backend and AI features (not available in this prototype)</summary><div style="padding:0 14px 14px">
+  <section id="ai">
+    <h2>SEC Backend and AI Workflow (disabled)</h2>
+    <p class="sub">A workflow for reading a company&rsquo;s financial reports and turning disclosures into leverage insights. <b>This is an interface preview.</b> Live SEC retrieval and AI analysis are not available in this published prototype. Only the case-study data and the existing verified calculations below are real.</p>
+    <div class="aihead">
+      <span class="b b-rep">REPORTED: from the case disclosure</span>
+      <span class="b b-hyp">HYPOTHETICAL: scenario or adjustment</span>
+      <span class="b b-rb">RULE-BASED: written for this case, not AI</span>
+      <span class="b b-ai">AI-GENERATED: none, not connected</span>
+    </div>
+    <div class="ctl">
+      <label>Company<select id="aiCo" aria-label="Company"><option>Meta Platforms</option><option disabled>Other companies (not connected: needs a company-search integration)</option></select></label>
+      <label>Report type<select id="aiType" aria-label="Report type"><option value="a">Annual report (Form 10-K)</option><option value="q">Quarterly report (Form 10-Q)</option></select></label>
+      <label>Reporting period<select id="aiPer" aria-label="Reporting period"></select></label>
+    </div>
+    <div class="panel2">
+      <b>Backend connection</b> <span class="b b-nc" id="aiConn">Not connected</span>
+      <p class="sub" style="font-size:14px;margin:6px 0 10px"><b>Not available in this prototype.</b> Live SEC retrieval needs a separate server-side backend with an identifying User-Agent and rate limiting, and a published Artifact cannot call other sites. These controls are disabled. Use the preloaded case sample and the rule-based detector below.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <label style="flex:1;min-width:240px">Backend URL<input id="aiUrl" class="urlin" type="url" disabled placeholder="Not available in this prototype" autocomplete="off" spellcheck="false"></label>
+        <button id="aiTest" class="go" disabled>Test Connection</button>
+      </div>
+    </div>
+    <div class="bar-row"><button class="go" id="aiFetch" disabled>Fetch report</button><button id="aiGoDet">Go to Off-Balance-Sheet Detector</button><button class="go" id="aiLoadDisclosure" disabled>Load filing disclosures into detector</button></div>
+    <div id="aiHint" class="note" style="margin:0 0 6px">Backend controls are disabled in this published prototype. No report is fetched.</div>
+    <div id="aiStatus"></div>
+    <div id="aiFiling"></div>
+    <h3 style="font-size:17px;margin:18px 0 0">Workflow</h3>
+    <div class="steps" id="aiSteps" role="group" aria-label="Workflow steps"></div>
+    <div class="panel2" id="aiStepBody"></div>
+
+    <div class="nc-box"><span class="b b-ai">AI-GENERATED</span> <span class="b b-nc">Not connected</span><p style="margin:8px 0 0"><b>No AI interpretation is shown, and none is simulated.</b> Generating one needs a backend that holds an AI API key securely, receives the retrieved filing text, and returns a response that is checked against the verified calculations. A published page cannot do this on its own.</p></div>
+
+    <h3 style="font-size:19px;margin:24px 0 4px">Integration status</h3>
+    <div class="chartbox"><table class="cmp"><thead><tr><th>Function</th><th>Status</th><th>What is required</th></tr></thead><tbody>
+      <tr><th>Company and filing search</th><td id="aiIntSearch"><span class="b b-nc">Not connected</span></td><td>Disabled here. Would need a separate server-side backend, which a published Artifact cannot call.</td></tr>
+      <tr><th>Document retrieval and parsing</th><td><span class="b b-nc">Not connected</span></td><td>Disabled here. Would need backend retrieval plus a parser for HTML, PDF or XBRL filings.</td></tr>
+      <tr><th>Disclosure extraction</th><td><span class="b b-part">Manual</span></td><td>Works now on text you paste into the rule-based detector.</td></tr>
+      <tr><th>Ratio computation</th><td><span class="b b-ok">Available</span></td><td>Uses the verified slider calculations. Nothing further is needed.</td></tr>
+      <tr><th>AI insight generation</th><td><span class="b b-nc">Not connected</span></td><td>An AI backend with secure key storage and output validation.</td></tr>
+    </tbody></table></div>
+  </section>
+  </div></details>
+
+  <footer>University project &middot; Built from HBS case figures &middot; Hypothetical adjustments are labelled and are not Meta&rsquo;s reported results</footer>
+</div>
+
+<script>
+var $=function(i){return document.getElementById(i)};
+var DEF={D:59,E:217,B:27,N:2.5},view="ratio";
+function f1(x){return x.toFixed(1)}
+function calc(){
+  var D=+$("D").value,E=+$("E").value,B=+$("B").value,N=+$("N").value;
+  $("vD").textContent="$"+f1(D)+"B";$("vE").textContent="$"+f1(E)+"B";
+  $("vB").textContent="+$"+f1(B)+"B";$("vN").textContent="+$"+f1(N)+"B";
+  var r=D/E*100,h=(D+B)/(E+N)*100;
+  $("rR").textContent=f1(r)+"%";$("hR").textContent=f1(h)+"%";
+  $("rF").textContent=f1(D)+" / "+f1(E);
+  $("hF").textContent="("+f1(D)+" + "+f1(B)+") / ("+f1(E)+" + "+f1(N)+")";
+  var d=h-r;
+  $("delta").innerHTML="Hypothetical consolidation changes the ratio by <b>"+(d>=0?"+":"")+f1(d)+" percentage points</b> ("+f1(r)+"% to "+f1(h)+"%).";
+  draw(D,E,B,N,r,h);
+}
+function draw(D,E,B,N,r,h){
+  var s=$("chart"),o="";
+  var rep="#2f8bff",hyp="#ffb547",grid="#1e3d78",mute="#8fa8d6";
+  if(view==="ratio"){
+    var max=Math.max(60,Math.ceil(Math.max(r,h)/10)*10+10),H=250,base=290;
+    for(var t=0;t<=max;t+=10){var y=base-t/max*H;o+='<line x1="70" x2="740" y1="'+y+'" y2="'+y+'" stroke="'+grid+'"/><text x="60" y="'+(y+4)+'" text-anchor="end" font-size="12" style="fill:'+mute+'">'+t+'%</text>';}
+    var bars=[[r,rep,"Reported",190],[h,hyp,"Hypothetical",470]];
+    bars.forEach(function(b){var hh=b[0]/max*H;
+      o+='<rect x="'+b[3]+'" y="'+(base-hh)+'" width="120" height="'+hh+'" rx="6" fill="'+b[1]+'"/>';
+      o+='<text x="'+(b[3]+60)+'" y="'+(base-hh-10)+'" text-anchor="middle" font-size="22" font-weight="700">'+f1(b[0])+'%</text>';
+      o+='<text x="'+(b[3]+60)+'" y="'+(base+24)+'" text-anchor="middle" font-size="14">'+b[2]+'</text>';});
+  }else{
+    var tot=Math.max(D+B,E+N),mx=Math.ceil(tot/50)*50+10,W=560,x0=150;
+    function seg(x,w,c,l,v,y){if(w<=0)return"";return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="46" fill="'+c+'"/><text x="'+(x+w/2)+'" y="'+(y+28)+'" text-anchor="middle" font-size="13" style="fill:#fff">'+(w>60?l+" "+f1(v):f1(v))+'</text>';}
+    var rows=[["Debt",40,[[D,rep,"Reported",0],[B,hyp,"Hyperion bonds",0]]],["Equity",150,[[E,rep,"Reported",0],[N,hyp,"NCI",0]]]];
+    rows.forEach(function(rw){var x=x0;o+='<text x="130" y="'+(rw[1]+28)+'" text-anchor="end" font-size="15" font-weight="600">'+rw[0]+'</text>';
+      rw[2].forEach(function(p){var w=p[0]/mx*W;o+=seg(x,w,p[1],p[2],p[0],rw[1]);x+=w;});
+      o+='<text x="'+(x+8)+'" y="'+(rw[1]+28)+'" font-size="13" style="fill:'+mute+'">'+f1(rw[2][0][0]+rw[2][1][0])+'B</text>';});
+    o+='<rect x="150" y="260" width="14" height="14" fill="'+rep+'"/><text x="172" y="272" font-size="13">Reported</text><rect x="260" y="260" width="14" height="14" fill="'+hyp+'"/><text x="282" y="272" font-size="13">Hypothetical adjustment</text>';
+    o+='<text x="150" y="312" font-size="13" style="fill:'+mute+'">Total debt: '+f1(D+B)+'B hypothetical vs. '+f1(D)+'B reported. Total equity: '+f1(E+N)+'B vs. '+f1(E)+'B.</text>';
+  }
+  s.innerHTML=o;
+}
+["D","E","B","N"].forEach(function(k){$(k).addEventListener("input",calc)});
+$("reset").onclick=function(){for(var k in DEF)$(k).value=DEF[k];calc()};
+document.querySelectorAll("[data-v]").forEach(function(b){b.onclick=function(){
+  view=b.dataset.v;document.querySelectorAll("[data-v]").forEach(function(x){x.classList.toggle("on",x===b)});calc()}});
+
+var RISKS={
+ "Operating and finance leases":[
+  ["How it shows up","Lease liabilities from data center and equipment leases can add to total obligations even when they are not counted as long-term debt in the ratio above."],
+  ["Why it matters","A debt-to-equity ratio based only on long-term debt may understate total fixed commitments."],
+  ["What to check","Lease liabilities, committed leases not yet commenced, and lease terms in the case exhibits and Meta&rsquo;s notes."]],
+ "Residual value guarantees":[
+  ["How it works","In some leases, the lessee guarantees that the asset will be worth at least a stated amount at lease end. If it is worth less, the lessee pays the shortfall."],
+  ["Why it matters for AI assets","Data center equipment can lose value quickly, which raises the chance that a guarantee is called."],
+  ["Accounting treatment","Amounts expected to be owed under a guarantee can be included in lease payments. Otherwise, the exposure is disclosed rather than recorded."]],
+ "Combined effect on leverage":[
+  ["Layering","Consolidation of a VIE and lease or guarantee exposures can stack on one another, so leverage looks different depending on which items are counted."],
+  ["Presentation risk","Moving between reported and hypothetical views changes the story, so label every adjustment clearly."],
+  ["Sensitivity","Use the sliders above to see how added debt or equity moves the ratio. Add any lease or guarantee amount from the case yourself, as a clearly marked hypothetical."]]
+};
+var names=Object.keys(RISKS),tabs=$("riskTabs");
+function show(n){
+  document.querySelectorAll("#riskTabs button").forEach(function(b){b.classList.toggle("on",b.textContent===n)});
+  $("riskBody").innerHTML=RISKS[n].map(function(c){return '<div class="card"><h3>'+c[0]+'</h3><p>'+c[1]+'</p></div>'}).join("");
+}
+names.forEach(function(n){var b=document.createElement("button");b.textContent=n;b.onclick=function(){show(n)};tabs.appendChild(b)});
+show(names[0]);calc();
+
+/* ---- Off-Balance-Sheet Detector ---- */
+var TOP={
+ vie:{n:"VIE",re:/variable interest entit(?:y|ies)|\bVIEs?\b|primary beneficiary/},
+ lease:{n:"Lease",re:/\bleas(?:e|es|ed|ing)\b|\blessee\b|\blessor\b|right-of-use/},
+ rvg:{n:"Guarantee / RVG",re:/residual value guarantees?|residual value|guarantee[sd]?|guarantor|maximum (?:potential )?exposure to loss/},
+ fin:{n:"Financing commitment",re:/(?:purchase|financing|funding|capital|credit|loan|lending|construction) (?:commitment|obligation)s?|commitments? to (?:fund|provide|purchase|invest|lend)|committed (?:to|capital)|unconditional purchase obligations?|backstop|undrawn|revolving|credit facilit(?:y|ies)|commitments?/},
+ eq:{n:"Equity investment / JV",re:/equity method|equity interest|ownership interest|non-?controlling interests?|joint ventures?|equity investments?/},
+ debt:{n:"Debt instrument",re:/senior notes|bonds?|notes payable|term loans?|long-term debt/}
+};
+var CL={
+ rep:{n:"Reported liability",c:"#4cc3ff",imp:"Already on the balance sheet. Whether it sits inside the long-term debt figure used above depends on the line item (lease liabilities and consolidated VIE liabilities may be reported separately). If it is not in that figure, adding it would raise debt-to-equity."},
+ off:{n:"Off-balance-sheet commitment",c:"#ffb547",imp:"Not recognized as a liability today, so it does not change the reported ratio. It is a future cash demand and could reach the balance sheet if a lease commences, a VIE is consolidated or funding is drawn."},
+ con:{n:"Contingent exposure",c:"#ff7b72",imp:"A possible payment, not debt. It is generally recognized only when a loss is probable and estimable, and is otherwise disclosed. It affects leverage only if called, so use any stated amount as a ceiling for stress-testing, not as debt."},
+ eq:{n:"Equity investment",c:"#5be0a8",imp:"Usually carried as a net investment (an asset), not borrowed money, so it adds no debt unless the entity is consolidated. Consolidation would bring in its assets and liabilities, with other owners' share shown as non-controlling interest."},
+ unk:{n:"Needs manual review",c:"#8fa8d6",imp:"The wording does not match a classification rule clearly. Read the passage and classify it by hand."}
+};
+var TIP={vie:"VIE status decides consolidation: only the primary beneficiary consolidates the entity.",lease:"Leases that have not commenced are typically disclosed rather than recorded; recorded lease liabilities may sit outside the long-term debt figure.",rvg:"A guarantee is a contingent payment obligation and is not the same thing as borrowing."};
+var SAMPLE="Illustrative sample (fictional company, made-up figures for demonstration only). We hold a 20% equity interest in Alpha Data Center LLC, a variable interest entity. We are not the primary beneficiary and therefore do not consolidate the entity. We have entered into data center leases that have not yet commenced, with undiscounted future payments of $4.2 billion. Operating lease liabilities of $1.8 billion are recorded on our balance sheet. Under the lease, we guarantee the residual value of the facility, and our maximum exposure under the residual value guarantee is $900 million. We have a funding commitment to provide up to $500 million of additional capital to the entity. The entity issued $3.0 billion of senior notes, which are included in its liabilities.";
+var AMT=/(?:US\$|USD\s?|\$)\s?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?:\s?(billion|million|thousand|bn|mm|b|m|k)\b)?|(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?\s?(billion|million)\s(?:US\s)?(?:dollars|USD)/gi;
+var CON=/guarantee|guarantor|shortfall|indemnif|maximum (?:potential )?(?:exposure|amount|payment)|could be required|may be required|contingen|reimburse/i;
+var CONREC=/(?:recorded|recognized|accrued) (?:a |an )?(?:liabilit|accrual|loss)/i;
+var OFF=/commitments?|committed|not yet commenced|not commenced|have not commenced|not recorded|not reflected|undrawn|purchase obligations?|off-balance/i;
+var EQ=/equity method|equity interest|ownership interest|non-?controlling interest|joint venture|equity investment|\d+(?:\.\d+)?\s?% (?:interest|ownership|stake)/i;
+var REP=/recorded|recognized|lease liabilit|carrying (?:value|amount)|senior notes|bonds|notes payable|term loan|outstanding|we consolidate|primary beneficiary and consolidat|included in (?:our |its )?(?:balance sheet|long-term debt|liabilit|other liabilit)/i;
+var OFFV=/not (?:the )?primary beneficiary|not consolidated|do(?:es)? not consolidate/i;
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function findAll(re,s,k){var r=new RegExp(re.source,"gi"),m,o=[];while((m=r.exec(s))){o.push({s:m.index,e:m.index+m[0].length,k:k,t:m[0]});if(m.index===r.lastIndex)r.lastIndex++}return o}
+function cue(re,s){var m=s.match(re);return m?m[0]:null}
+function classify(s){var c;
+ if(c=cue(CON,s)){var r=cue(CONREC,s);if(r)return{cls:"rep",why:"“"+r+"” (a liability was recorded for the guarantee)"};return{cls:"con",why:"“"+c+"” (guarantee or contingency wording)"}}
+ if(c=cue(OFF,s))return{cls:"off",why:"“"+c+"” (commitment or unrecorded wording)"};
+ if(c=cue(EQ,s))return{cls:"eq",why:"“"+c+"” (equity-interest wording)"};
+ if(c=cue(ISS,s))return{cls:"off",why:"“"+c+"” (debt issued by the venture or entity itself, so not automatically Meta's own liability)"};
+ if(c=cue(REP,s))return{cls:"rep",why:"“"+c+"” (recorded or debt wording)"};
+ if(c=cue(OFFV,s))return{cls:"off",why:"“"+c+"” (entity not consolidated)"};
+ return{cls:"unk",why:"no classification cue found"}}
+function mark(seg,rs){rs.sort(function(a,b){return a.s-b.s||b.e-a.e});var o="",p=0;rs.forEach(function(r){if(r.s<p)return;o+=esc(seg.slice(p,r.s))+'<span class="'+r.k+'">'+esc(seg.slice(r.s,r.e))+'</span>';p=r.e});return o+esc(seg.slice(p))}
+function unitInfo(m){var n=(m[1]||m[4]).replace(/,/g,"")+(m[2]||m[5]||""),u=(m[3]||m[6]||"").toLowerCase(),mul=null;
+ if(/^(billion|bn|b)$/.test(u))mul=1;else if(/^(million|mm|m)$/.test(u))mul=1e-3;else if(/^(thousand|k)$/.test(u))mul=1e-6;
+ return{usdB:mul===null?null:parseFloat(n)*mul}}
+function analyzeV1(){
+ var txt=$("fn").value.trim(),out=$("obsOut");
+ if(!txt){out.innerHTML='<p class="note">Paste footnote text above, or load the illustrative sample, then click Analyze disclosures.</p>';return}
+ var segs=txt.replace(/([.!?])\s+(?=[A-Z("“$])/g,"$1\u0001").split(/\u0001|\n+/),unitNote=/in (millions|billions|thousands)/i.exec(txt),F=[],plain=[],counts={},ai=0;
+ segs.forEach(function(seg){seg=seg.trim();if(seg.length<3)return;
+  var tp=[],rs=[];for(var k in TOP){var f=findAll(TOP[k].re,seg,"kw");if(f.length){tp.push(k);rs=rs.concat(f)}}
+  if(!tp.length){plain.push('<span>'+esc(seg)+'</span>');return}
+  var am=[],r=new RegExp(AMT.source,"gi"),m;
+  while((m=r.exec(seg))){var u=unitInfo(m);am.push({raw:m[0],s:m.index,e:m.index+m[0].length,usdB:u.usdB,id:ai++});rs.push({s:m.index,e:m.index+m[0].length,k:"amt"})}
+  var pc=findAll(/\d+(?:\.\d+)?\s?%/,seg,"amt");pc.forEach(function(p){rs.push(p)});
+  var c=classify(seg);counts[c.cls]=(counts[c.cls]||0)+1;
+  var h=mark(seg,rs);plain.push('<span class="hl c-'+c.cls+'" title="'+CL[c.cls].n+'">'+h+'</span>');
+  F.push({seg:seg,tp:tp,cls:c.cls,why:c.why,am:am,pc:pc.map(function(p){return seg.slice(p.s,p.e)}),html:h})});
+ if(!F.length){out.innerHTML='<p class="note">No VIE, lease, guarantee, financing-commitment, equity-investment or debt wording was found. Try pasting a fuller footnote.</p>';return}
+ var nA=0;F.forEach(function(f){nA+=f.am.length});
+ var h='<div class="stats"><span class="stat"><b>'+F.length+'</b> passages flagged</span><span class="stat"><b>'+nA+'</b> amounts extracted</span>';
+ for(var k in CL){if(counts[k])h+='<span class="stat"><span class="dot" style="background:'+CL[k].c+'"></span>'+CL[k].n+': <b>'+counts[k]+'</b></span>'}
+ h+='</div><h3 style="font-size:17px;margin:10px 0 8px">Highlighted text</h3><div class="annot">'+plain.join(" ")+'</div>';
+ h+='<p class="note">Shading shows the classification. Underlined words are the matched topic keywords. White tags are extracted amounts and percentages.</p>';
+ h+='<div id="whatif" class="whatif"></div><h3 style="font-size:17px;margin:14px 0 8px">Findings</h3>';
+ F.forEach(function(f){var c=CL[f.cls];
+  h+='<div class="find" style="border-left-color:'+c.c+'"><div><span class="cls" style="background:'+c.c+'">'+c.n+'</span>'+f.tp.map(function(k){return'<span class="chip">'+TOP[k].n+'</span>'}).join("")+'</div>';
+  h+='<div class="src"><b>Source passage:</b> “'+f.html+'”</div><div class="ctx" style="font-size:13px;color:var(--mute)">Why this class: '+esc(f.why)+'</div>';
+  if(f.am.length){f.am.forEach(function(a){
+   var conv=a.usdB!==null?'= $'+(a.usdB<0.01?a.usdB.toFixed(4):a.usdB.toFixed(3).replace(/\.?0+$/,""))+'B':'unit not stated in this passage'+(unitNote?' (the text says “'+esc(unitNote[0])+'” elsewhere; not converted)':'');
+   var snip=f.seg.slice(Math.max(0,a.s-70),a.s)+"\u0002"+f.seg.slice(a.s,a.e)+"\u0003"+f.seg.slice(a.e,a.e+70);
+   snip=esc(snip).replace("\u0002",'<span class="amt">').replace("\u0003","</span>");
+   h+='<div class="amtrow"><label>'+(a.usdB!==null?'<input type="checkbox" class="wi" data-v="'+a.usdB+'" aria-label="Test as hypothetical debt">':'<span style="width:13px"></span>')+'<span><b>'+esc(a.raw)+'</b> '+conv+(a.usdB!==null?' &middot; tick to test as hypothetical debt':'')+'<div class="ctx">Source: …'+snip+'…</div></span></label></div>'});}
+  else h+='<div class="ctx" style="font-size:13px;color:var(--mute);margin-top:6px">No amount stated in this passage.</div>';
+  if(f.pc.length)h+='<div class="ctx" style="font-size:13px;color:var(--mute);margin-top:6px">Percentage stated: '+f.pc.map(esc).join(", ")+' (not a dollar amount)</div>';
+  h+='<div class="imp"><b>Leverage impact:</b> '+c.imp;
+  f.tp.forEach(function(k){if(TIP[k])h+=' <i>'+TIP[k]+'</i>'});
+  h+='</div></div>'});
+ out.innerHTML=h;
+ document.querySelectorAll(".wi").forEach(function(x){x.addEventListener("change",whatIf)});
+ whatIf();
+}
+function whatIf(){
+ var el=$("whatif");if(!el)return;
+ var D=+$("D").value,E=+$("E").value,B=+$("B").value,N=+$("N").value,sum=0,n=0;
+ document.querySelectorAll(".wi").forEach(function(x){if(x.checked){sum+=parseFloat(x.dataset.v);n++}});
+ var base=(D+B)/(E+N)*100,w=(D+B+sum)/(E+N)*100;
+ el.innerHTML=n?'<b>Hypothetical what-if.</b> The dashboard hypothetical ratio is '+f1(base)+'%. Adding the '+n+' ticked amount'+(n>1?'s':'')+' (+$'+sum.toFixed(2).replace(/\.?0+$/,"")+'B) as debt gives <b>'+f1(w)+'%</b>. Check the ticked amounts do not overlap, which would double count.':'<b>Hypothetical what-if.</b> No disclosure amounts are included in the ratio. Tick an amount below to test it as hypothetical debt. Guarantees and commitments are never added automatically.';
+}
+$("analyze").onclick=analyze;
+$("sample").onclick=function(){$("fn").value=SAMPLE;analyze()};
+$("clearfn").onclick=function(){$("fn").value="";$("obsOut").innerHTML="";priEmpty("Run the detector to see priority passages.")};
+var ISS=/(?:venture|entity|lessor|vehicle|SPV)\s+(?:has\s+)?issued/i;
+var CASE="Case-based summary (not the original Exhibit 8 text). Meta owns 20% of the Hyperion joint venture and does not consolidate it under ASC 810. The venture issued $27 billion in bonds. Meta has initial lease commitments of $12.31 billion, with four-year lease terms starting in 2029 and renewal options. Meta also provides residual value guarantees with an initial threshold of approximately $28 billion. Its disclosed maximum exposure to loss is $45.95 billion.";
+function hideCase(){$("caseNote").style.display="none"}
+$("casebtn").onclick=function(){$("fn").value=CASE;$("caseNote").style.display="block";analyze()};
+["sample","clearfn"].forEach(function(i){$(i).addEventListener("click",hideCase)});
+$("fn").addEventListener("input",hideCase);
+
+/* ---- ASC 810 Consolidation Assessment ---- */
+var m810="rep";
+function pill(ok,hy){return '<span class="pill '+(hy?'ph':'pr')+'">'+(ok?'✓ Met':'✕ Not met')+(hy?' (hypothetical)':' (reported)')+'</span>'}
+function r810(){
+ var D=+$("D").value,E=+$("E").value,B=+$("B").value,N=+$("N").value,r=D/E*100,h=(D+B)/(E+N)*100;
+ var hy=m810==="hyp",hp=$("ck810p").checked,he=$("ck810e").checked;
+ var p=hy?hp:false,e=hy?he:true,both=p&&e;
+ $("a810hyp").style.display=hy?"block":"none";
+ document.querySelectorAll("[data-m]").forEach(function(b){b.classList.toggle("on",b.dataset.m===m810)});
+ var cls=hy?"cond h":"cond";
+ var c1='<div class="'+cls+'"><h3>Condition 1: Power</h3><div class="def">Power to direct the activities that most significantly affect the VIE&rsquo;s economic performance.</div>'+pill(p,hy)+'<p style="margin-top:10px;font-size:14px">'+(hy?(hp?'Hypothetical: Meta obtains this power over Hyperion.':'Hypothetical: Meta still lacks this power.'):'Meta concludes that it does not have the required power over Hyperion.')+'</p></div>';
+ var c2='<div class="'+cls+'"><h3>Condition 2: Economic exposure</h3><div class="def">Obligation to absorb potentially significant losses or right to receive potentially significant benefits.</div>'+pill(e,hy)+'<p style="margin:10px 0 6px;font-size:14px">'+(hy&&!he?'Hypothetical: this condition is switched off for the test.':'Meta has significant economic exposure through:')+'</p>'+(hy&&!he?'':'<div class="ev"><span>20% equity interest</span><span>Initial lease commitments: $12.31B</span><span>Residual value guarantees: ~$28B initial threshold</span><span>Disclosed maximum exposure to loss: $45.95B</span></div><p style="font-size:12px;color:var(--mute);margin:8px 0 0">Amounts shown separately, not added together.</p>')+'</div>';
+ $("a810cards").innerHTML=c1+c2;
+ var t,s;
+ if(!hy){t="Reported: Meta is not the primary beneficiary, so it does not consolidate Hyperion";s="Condition 1 is not met and both conditions are required. This is Meta\u2019s reported assessment as given in the case summary."}
+ else if(both){t="Hypothetical: both conditions would be met";s="In this scenario Meta would satisfy the primary beneficiary test, and the framework would then point toward consolidation. This is not Meta\u2019s reported conclusion, and the case does not say Meta has this power."}
+ else{t="Hypothetical: not both conditions met, so no consolidation in this scenario";s="Both conditions are required, so failing either one means Meta is not the primary beneficiary."}
+ $("a810res").innerHTML='<div class="res'+(hy?' h':'')+'"><b>'+t+'</b>'+s+'</div>';
+ var hpv=hp,hev=he,hb=hpv&&hev;
+ function cell(ok,hyp){return '<span class="pill '+(hyp?'ph':'pr')+'">'+(ok?'✓ Met':'✕ Not met')+'</span>'}
+ $("a810tbl").innerHTML='<table class="cmp"><thead><tr><th></th><th class="cr">Reported conclusion</th><th class="ch">Hypothetical scenario</th></tr></thead><tbody>'
+ +'<tr><th>1. Power</th><td class="cr">'+cell(false,0)+'</td><td class="ch">'+cell(hpv,1)+'</td></tr>'
+ +'<tr><th>2. Economic exposure</th><td class="cr">'+cell(true,0)+'</td><td class="ch">'+cell(hev,1)+'</td></tr>'
+ +'<tr><th>Primary beneficiary?</th><td class="cr">No</td><td class="ch">'+(hb?'Yes, in this scenario':'No')+'</td></tr>'
+ +'<tr><th>Consolidated?</th><td class="cr">No</td><td class="ch">'+(hb?'Would be, in this scenario':'No')+'</td></tr>'
+ +'<tr><th>Debt-to-equity (dashboard)</th><td class="cr">'+f1(r)+'% reported</td><td class="ch">'+(hb?f1(h)+'% hypothetical consolidated':f1(r)+'% (same as reported)')+'</td></tr>'
+ +'</tbody></table>';
+}
+document.querySelectorAll("[data-m]").forEach(function(b){b.onclick=function(){m810=b.dataset.m;r810()}});
+["ck810p","ck810e"].forEach(function(i){$(i).addEventListener("change",r810)});
+["D","E","B","N"].forEach(function(k){$(k).addEventListener("input",r810)});
+$("reset").addEventListener("click",r810);
+r810();
+
+/* ---- ASC 842 Lease Assessment ---- */
+var C842=[
+ {t:"Transfer of ownership",d:"The lease transfers ownership of the asset to the lessee by the end of the lease term.",e:"Not addressed in the case summary. No evidence provided."},
+ {t:"Purchase option",d:"The lease gives the lessee a purchase option that it is reasonably certain to exercise.",e:"Not addressed in the case summary. Renewal options are not purchase options, so they do not speak to this criterion."},
+ {t:"Lease term vs. economic life",d:"The lease term covers a major part of the asset\u2019s remaining economic life.",e:"Initial four-year terms starting in 2029, with renewal options up to 20 years. The remaining economic life is not given, and renewal periods count toward the lease term only if exercise is reasonably certain.",calc:3},
+ {t:"Present value vs. fair value",d:"The present value of lease payments plus any residual value guaranteed by the lessee represents substantially all of the asset\u2019s fair value.",e:"Residual value guarantees with an initial threshold of about $28 billion. No asset fair value or discount rate is given, and an initial threshold is not a present value.",calc:4},
+ {t:"Specialized asset",d:"The asset is so specialized that it is expected to have no alternative use to the lessor at the end of the lease term.",e:"Not addressed in the case summary. No evidence provided."}
+];
+var S842=["na","na","na","na","na"];
+function b842(){var h="";C842.forEach(function(c,i){
+ h+='<div class="cond h"><h3>'+(i+1)+'. '+c.t+'</h3><div class="def">'+c.d+'</div><div class="out"><b>Case summary:</b> '+c.e+'</div>';
+ if(c.calc===3)h+='<div class="calc"><label>Lease term (years)<input id="a3t" type="number" min="0" step="any"></label><label>Remaining economic life (years)<input id="a3l" type="number" min="0" step="any" placeholder="your input"></label></div><div class="seg"><button id="a3q4">Use 4-year initial term</button><button id="a3q20">Use 20 years (stated upper bound)</button></div><div class="out" id="a3o"></div>';
+ if(c.calc===4)h+='<div class="calc"><label>PV of lease payments + guaranteed residual ($B)<input id="a4p" type="number" min="0" step="any" placeholder="your input"></label><label>Asset fair value ($B)<input id="a4f" type="number" min="0" step="any" placeholder="your input"></label></div><div class="out" id="a4o"></div>';
+ h+='<div class="seg" data-i="'+i+'"><button data-s="na">Not assessed</button><button data-s="met">Criterion met</button><button data-s="not">Criterion not met</button></div><div class="flag" id="fl'+i+'"></div></div>'});
+ $("a842cards").innerHTML=h;
+ document.querySelectorAll("#a842cards .seg[data-i] button").forEach(function(b){b.onclick=function(){S842[+b.parentNode.dataset.i]=b.dataset.s;u842()}});
+ ["a3t","a3l","a4p","a4f"].forEach(function(i){$(i).addEventListener("input",u842)});
+ $("a3q4").onclick=function(){$("a3t").value=4;u842()};$("a3q20").onclick=function(){$("a3t").value=20;u842()};
+}
+function u842(){
+ var t=parseFloat($("a3t").value),l=parseFloat($("a3l").value),p=parseFloat($("a4p").value),f=parseFloat($("a4f").value);
+ var r3=(t>0&&l>0)?t/l*100:null,r4=(p>=0&&f>0&&!isNaN(p))?p/f*100:null;
+ $("a3o").textContent=r3===null?"Enter a remaining economic life to compute a ratio. The case summary does not provide one.":"Your inputs: term is "+f1(r3)+"% of remaining economic life. Common reference point: 75%. This is not a conclusion, because renewal periods count only if reasonably certain.";
+ $("a4o").textContent=r4===null?"Enter both values to compute a ratio. The case summary provides neither a present value nor a fair value.":"Your inputs: "+f1(r4)+"% of fair value. Common reference point: 90%. This is not a conclusion.";
+ var met=0,not=0;
+ S842.forEach(function(s,i){if(s==="met")met++;if(s==="not")not++;
+  document.querySelectorAll('#a842cards .seg[data-i="'+i+'"] button').forEach(function(b){b.classList.toggle("on",b.dataset.s===s)});
+  var rr=i===2?r3:(i===3?r4:null),ref=i===2?75:90,fl="";
+  if(s==="na")fl="Insufficient evidence to conclude. Nothing is asserted for this criterion.";
+  else if(rr===null)fl="Assumption: the case summary gives no evidence for this criterion.";
+  else if(s==="met")fl=rr>=ref?"Consistent with your inputs ("+f1(rr)+"% vs. the "+ref+"% reference point).":"Your inputs ("+f1(rr)+"%) are below the "+ref+"% reference point. Check this assumption.";
+  else fl=rr<ref?"Consistent with your inputs ("+f1(rr)+"% vs. the "+ref+"% reference point).":"Your inputs ("+f1(rr)+"%) are at or above the "+ref+"% reference point. Check this assumption.";
+  $("fl"+i).textContent=fl});
+ var na=5-met-not,ti,su,st;
+ if(met>0){ti="Hypothetical: finance lease classification would apply";su="At least one criterion is marked as met in your assumptions, which is enough for finance-lease classification. This rests on your assumptions, not on evidence in the case summary, and it is not Meta\u2019s reported treatment.";st="Finance lease, in this scenario ("+met+" criterion"+(met>1?"s":"")+" assumed met)"}
+ else if(not===5){ti="Hypothetical: no criterion met, so operating-lease classification";su="This matches the reported treatment, but it still rests on your inputs.";st="Operating lease (all five marked not met)"}
+ else{ti="Cannot conclude: no criterion is marked as met";su=na+" of 5 criteria are not assessed, so no classification is asserted. Finance-lease treatment applies only if at least one criterion is met.";st="Not determined (no criterion marked as met)"}
+ $("a842res").innerHTML='<div class="res h"><b>'+ti+'</b>'+su+'</div>';
+ var D=+$("D").value,E=+$("E").value;
+ $("a842tbl").innerHTML='<table class="cmp"><thead><tr><th></th><th class="cr">Reported: operating lease</th><th class="ch">Hypothetical: finance lease</th></tr></thead><tbody>'
+ +'<tr><th>Classification</th><td class="cr">Operating lease (reported)</td><td class="ch">Applies only if at least one of the five criteria is met.<br><i>Your current assumptions: '+st+'</i></td></tr>'
+ +'<tr><th>Balance sheet</th><td class="cr">Right-of-use asset and lease liability once leases commence</td><td class="ch">Right-of-use asset and lease liability once leases commence</td></tr>'
+ +'<tr><th>Income statement</th><td class="cr">Single, typically straight-line lease cost</td><td class="ch">Interest on the liability plus amortization of the asset, usually higher early in the term</td></tr>'
+ +'<tr><th>Cash flow statement</th><td class="cr">Lease payments generally in operating activities</td><td class="ch">Principal repayments in financing activities</td></tr>'
+ +'<tr><th>Leverage analysis</th><td class="cr">Operating lease liabilities are often analyzed separately from financial debt</td><td class="ch">Finance lease liabilities are more commonly treated as debt-like</td></tr>'
+ +'<tr><th>Dashboard ratio</th><td class="cr">'+f1(D/E*100)+'% reported, unchanged</td><td class="ch">Unchanged: no lease amounts are added to the ratio here</td></tr>'
+ +'</tbody></table>';
+}
+b842();u842();
+$("a842reset").onclick=function(){S842=["na","na","na","na","na"];["a3t","a3l","a4p","a4f"].forEach(function(i){$(i).value=""});u842()};
+["D","E","B","N"].forEach(function(k){$(k).addEventListener("input",u842)});
+$("reset").addEventListener("click",u842);
+
+/* ---- ASC 842 Lease Financial Calculator ---- */
+function g(x,d){return x.toFixed(d)}
+function k842(){
+ var n=+$("Ln").value,rp=+$("Lr").value,P=+$("Lp").value,r=rp/100;
+ $("vLn").textContent=n+" years";$("vLr").textContent=g(rp,1)+"%";$("vLp").textContent="$"+g(P,4)+"B";
+ var vn=Math.pow(1+r,-n),af=r>0?(1-vn)/r:n,pv=P*af,it=pv*r,am=pv/n,fin=it+am,op=P,df=fin-op;
+ function kp(b,v,s){return '<div class="kpi h sm"><span class="badge">HYPOTHETICAL</span><small>'+b+'</small><div class="n">$'+g(v,3)+'B</div><small>'+s+'</small></div>'}
+ $("k842k").innerHTML=kp("Present value of payments",pv,"Ordinary annuity")+kp("Initial lease liability",pv,"Equals the present value")+kp("Right-of-use asset",pv,"Equals the liability here")+kp("Year-one interest",it,"Liability \u00d7 rate")+kp("Year-one amortization",am,"Asset \u00f7 term")+kp("Year-one finance expense",fin,"Interest + amortization")+kp("Year-one operating charge",op,"Same annual payment")+kp("Finance minus operating",df,df>=0?"Finance is higher in year one":"Finance is lower in year one");
+ var mx=Math.max(fin,op,0.0001);
+ $("k842b").innerHTML='<div class="bl">Finance lease: $'+g(fin,3)+'B</div><div class="bar" style="width:'+(fin/mx*100)+'%"><span style="width:'+(fin?it/fin*100:0)+'%;background:#ffb547" title="Interest"></span><span style="width:'+(fin?am/fin*100:0)+'%;background:#ff8a3d" title="Amortization"></span></div><div class="out">Amber: interest $'+g(it,3)+'B. Orange: amortization $'+g(am,3)+'B.</div><div class="bl">Operating lease: $'+g(op,3)+'B</div><div class="bar" style="width:'+(op/mx*100)+'%"><span style="width:100%;background:#2f8bff"></span></div>';
+ var rr=g(rp/100,4);
+ $("k842f").innerHTML=
+ '<div class="step">1. Annual payment</div><div class="formula">P = $'+g(P,4)+'B (default: 12.31 / 4 = 3.0775)</div>'
+ +'<div class="step">2. Discount factor</div><div class="formula">(1 + r)^\u2212n = (1 + '+rr+')^\u2212'+n+' = '+g(vn,4)+'</div>'
+ +'<div class="step">3. Annuity factor (payments at the end of each year)</div><div class="formula">'+(r>0?'[1 \u2212 (1 + r)^\u2212n] / r = (1 \u2212 '+g(vn,4)+') / '+rr+' = '+g(af,4):'r = 0, so the factor is simply n = '+n)+'</div>'
+ +'<div class="step">4. Present value of the payments</div><div class="formula">PV = P \u00d7 annuity factor = '+g(P,4)+' \u00d7 '+g(af,4)+' = $'+g(pv,3)+'B</div>'
+ +'<div class="step">5. Initial lease liability and right-of-use asset</div><div class="formula">Liability = ROU asset = PV = $'+g(pv,3)+'B (no initial direct costs, incentives or prepayments)</div>'
+ +'<div class="step">6. Year-one interest</div><div class="formula">Liability \u00d7 r = '+g(pv,3)+' \u00d7 '+rr+' = $'+g(it,3)+'B</div>'
+ +'<div class="step">7. Year-one amortization</div><div class="formula">ROU asset / n = '+g(pv,3)+' / '+n+' = $'+g(am,3)+'B</div>'
+ +'<div class="step">8. Total year-one finance-lease expense</div><div class="formula">Interest + amortization = '+g(it,3)+' + '+g(am,3)+' = $'+g(fin,3)+'B</div>'
+ +'<div class="step">9. Year-one operating-lease charge</div><div class="formula">Same annual payment = $'+g(op,3)+'B</div>'
+ +'<div class="step">10. Difference</div><div class="formula">Finance \u2212 operating = '+g(fin,3)+' \u2212 '+g(op,3)+' = '+(df>=0?"+":"\u2212")+'$'+g(Math.abs(df),3)+'B</div>';
+}
+["Ln","Lr","Lp"].forEach(function(i){$(i).addEventListener("input",k842)});
+$("k842reset").onclick=function(){$("Ln").value=15;$("Lr").value=6.6;$("Lp").value=3.0775;k842()};
+k842();
+
+/* ---- Server Depreciation sensitivity ---- */
+function x250(){
+ var REV=201,OI=83,L1=+$("X1").value,L2=+$("X2").value,A=+$("X3").value;
+ $("vX1").textContent=g(L1,1)+" years";$("vX2").textContent=g(L2,1)+" years";$("vX3").textContent="$"+g(A,0)+"B";
+ var d1=A/L1,d2=A/L2,ad=d2-d1,oi2=OI-ad,m1=OI/REV*100,m2=oi2/REV*100;
+ function kp(h,b,l,v,s){return '<div class="kpi'+(h?' h':'')+' sm"><span class="badge">'+b+'</span><small>'+l+'</small><div class="n">'+v+'</div><small>'+s+'</small></div>'}
+ $("xk").innerHTML=kp(1,"SIMPLIFIED MODEL","Baseline depreciation","$"+g(d1,1)+"B",g(A,0)+" / "+g(L1,1))
+ +kp(1,"HYPOTHETICAL","Alternative depreciation","$"+g(d2,1)+"B",g(A,0)+" / "+g(L2,1))
+ +kp(1,"HYPOTHETICAL","Additional depreciation",(ad<0?"\u2212":"")+"$"+g(Math.abs(ad),1)+"B",ad<0?"Alternative life is longer, so expense falls":"Alternative minus baseline")
+ +kp(0,"REPORTED","Operating income","$83.0B","Case figure")
+ +kp(1,"HYPOTHETICAL","Adjusted operating income","$"+g(oi2,1)+"B","83 \u2212 "+g(ad,1))
+ +kp(0,"REPORTED","Operating margin",g(m1,1)+"%","83 / 201")
+ +kp(1,"HYPOTHETICAL","Adjusted operating margin",g(m2,1)+"%",g(oi2,1)+" / 201");
+ var mxI=Math.max(OI,oi2,1),mxM=Math.max(m1,m2,1);
+ function bar(v,mx,c,t){return '<div class="bar"><span style="width:'+Math.max(Math.abs(v)/mx*100,6)+'%;background:'+c+'">'+t+'</span></div>'}
+ $("xci").innerHTML='<div class="lab">Reported</div>'+bar(OI,mxI,"#4cc3ff","$83.0B")+'<div class="lab">Hypothetical adjusted</div>'+bar(oi2,mxI,"#ffb547","$"+g(oi2,1)+"B");
+ $("xcm").innerHTML='<div class="lab">Reported</div>'+bar(m1,mxM,"#4cc3ff",g(m1,1)+"%")+'<div class="lab">Hypothetical adjusted</div>'+bar(m2,mxM,"#ffb547",g(m2,1)+"%")+'<div class="out">Change: '+(m2-m1>=0?"+":"\u2212")+g(Math.abs(m2-m1),1)+' percentage points</div>';
+ $("xf").innerHTML='<div class="formula">Baseline depreciation = asset base / life = '+g(A,0)+' / '+g(L1,1)+' = $'+g(d1,2)+'B</div>'
+ +'<div class="formula">Alternative depreciation = '+g(A,0)+' / '+g(L2,1)+' = $'+g(d2,2)+'B</div>'
+ +'<div class="formula">Additional depreciation = '+g(d2,2)+' \u2212 '+g(d1,2)+' = $'+g(ad,2)+'B</div>'
+ +'<div class="formula">Adjusted operating income = 83 \u2212 '+g(ad,2)+' = $'+g(oi2,2)+'B (hypothetical)</div>'
+ +'<div class="formula">Reported margin = 83 / 201 = '+g(m1,1)+'%  |  Adjusted margin = '+g(oi2,2)+' / 201 = '+g(m2,1)+'% (hypothetical)</div>';
+}
+["X1","X2","X3"].forEach(function(i){$(i).addEventListener("input",x250)});
+$("xreset").onclick=function(){$("X1").value=5.5;$("X2").value=4;$("X3").value=176;x250()};
+x250();
+
+/* ---- Detector v2: corrected segmentation, amount extraction and roles ---- */
+CL.c810={n:'ASC 810 consolidation conclusion',c:'#b69cff',imp:'This states whether Meta consolidates the entity under ASC 810. It is an accounting conclusion, not a financing commitment and not an amount of debt. If the entity is not consolidated, its assets and liabilities stay off Meta\'s balance sheet and reported leverage excludes them. Meta\'s exposure then appears through its investment, leases and guarantees.'};
+TOP.fin.re=/(?:purchase|financing|funding|capital|credit|loan|lending) (?:commitment|obligation)s?|commitments? to (?:fund|provide|purchase|invest|lend)|committed (?:to|capital)|unconditional purchase obligations?|backstop|undrawn|revolving|credit facilit(?:y|ies)|commitments?/;
+TOP.rvg.re=/residual value guarantees?|residual value|guarantee[sd]?|guarantor|threshold|maximum (?:potential )?exposure to loss|exposure to loss/;
+TOP.dev={n:'Development / construction',re:/development (?:commitment|cost|costs|expenditure|funding|agreement)s?|construction (?:commitment|cost|costs|loan)|capital expenditures?|to (?:develop|construct)/};
+TOP.c810={n:'ASC 810 conclusion',re:/primary beneficiary|ASC 810|do(?:es)? not consolidate|consolidat(?:e|es|ed|ion)/};
+TOP.amt={n:'Amount only',re:/(?!)/};
+var CONCL=/primary beneficiary|(?:do|does|did) not consolidate|not consolidated|consolidate[sd]? (?:the )?(?:VIE|venture|JV|joint venture|entity)/i;
+var FINSTRICT=/(?:funding|financing|purchase|capital|construction) commitments?|commitments? to (?:fund|provide|purchase|invest|lend)|committed to (?:fund|provide|purchase|invest|lend)/i;
+var ISS2=/(?:venture|entity|lessor|vehicle|SPV|JV|LLC|issuer)\b[^.]{0,40}?\b(?:has\s+)?issued|bonds? (?:were|was) issued by|issued by (?:the )?(?:venture|entity|JV|LLC)/i;
+var ROLE={max:{n:'Maximum exposure to loss',c:'#ff7b72'},guar:{n:'Guarantee threshold',c:'#ffb547'},lease:{n:'Lease commitment',c:'#4cc3ff'},dev:{n:'Development commitment',c:'#ffd166'},eq:{n:'Equity investment',c:'#5be0a8'},hist:{n:'Historical transaction',c:'#b69cff'},other:{n:'Role unclear',c:'#8fa8d6'}};
+var RC=[
+ ['max',/maximum (?:potential |possible )?(?:exposure|loss)(?: to loss)?|exposure to loss/,40],
+ ['guar',/residual value guarantees?|guarantee[sd]?|guarantor|threshold/,25],
+ ['lease',/lease commitments?|lease payments?|lease obligations?|lease terms?|\bleases?\b|lessee/,25],
+ ['dev',/development (?:commitment|cost|costs|expenditure|funding|agreement)s?|construction (?:commitment|cost|costs|loan)|capital expenditures?|to (?:develop|construct|build)|development/,25],
+ ['eq',/equity (?:interest|investment|contribution|method|stake)|ownership interest|\d+(?:\.\d+)?\s?% (?:interest|ownership|stake)|non-?controlling interests?|member(?:ship)? interest|investment in/,20],
+ ['hist',/contributed|paid|received|sold|issued|funded|acquired|transferred|distribut\w*|proceeds|raised|borrowed|incurred|cash/,0]
+];
+CL.lfc={n:'Future lease commitment — not yet commenced',c:'#8ab4ff',imp:'A lease that has been signed but has not yet commenced is a future commitment. It is generally disclosed rather than recognized, so it does not change the reported debt-to-equity ratio today. A right-of-use asset and a lease liability are recognized when the lease commences. It is not a reported debt amount.'};
+CL.hist={n:'Historical transaction',c:'#ff9ecb',imp:'A past transaction that has already happened. It is not debt and not a future obligation. Contributions and distributions typically affect cash and the carrying amount of the investment, not borrowings.'};
+var LEASEW=/\bleas(?:e|es|ed|ing)\b/i,FUTL=/will commence|(?:have|has) not (?:yet )?commenced|not yet commenced|commenc(?:e|es|ing) in (?:19|20)\d\d|expected to commence/i,HISTP=/(?:at|upon|during) (?:the )?(?:venture |joint venture )?formation|one-time distribution|(?:we|meta)\s+(?:also\s+)?(?:contributed|received|paid|sold|transferred)\b/i;
+function notDebt(a,seg,cls){
+ if(cls!=='hist'&&a.role!=='eq'&&a.role!=='hist')return false;
+ return !/\bbonds?\b|\bnotes?\b|\bdebt\b|borrow/i.test(seg.slice(Math.max(0,a.s-30),a.e+40))}
+var EXP=[[4.30,'$4.30B'],[2.55,'$2.55B'],[27,'$27B'],[12.31,'$12.31B'],[28,'approx. $28B'],[45.95,'$45.95B'],[1.83,'$1.83B']];
+function paras2(t){
+ var L=t.replace(/\r\n?/g,'\n').split('\n'),P=[],cur='',prev='';
+ L.forEach(function(raw){var l=raw.trim();
+  if(!l){if(cur)P.push(cur);cur='';prev='';return}
+  var bullet=/^(?:[\u2022\u25cf*\-\u2013]\s|\d{1,2}[.)]\s|\([a-z0-9]\)\s)/.test(l);
+  var head=prev&&prev.length<50&&!/[.!?;:,)\]]$/.test(prev)&&/^[A-Z0-9$(]/.test(l);
+  if(cur&&(bullet||head)){P.push(cur);cur=l}else cur=cur?cur+' '+l:l;
+  prev=l});
+ if(cur)P.push(cur);return P}
+function sents2(p){
+ return p.replace(/\b(U\.S|No|Inc|Corp|Ltd|Co|vs|e\.g|i\.e|approx|etc|Mr|Ms|Dr|Exhibit|Note|Fig)\./g,'$1\u0004')
+  .replace(/([.!?])(["\u201d)]?)\s+(?=["\u201c(\[A-Z$])/g,'$1$2\u0001').split('\u0001')
+  .map(function(s){return s.replace(/\u0004/g,'.').replace(/\s+/g,' ').trim()}).filter(function(s){return s.length>2})}
+function ext(seg){
+ var r=/(US\$|USD\s?|\$)?\s?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?:\s?(trillion|billion|million|thousand|bn|mm|b|m|k)\b)?/gi,m,o=[];
+ while((m=r.exec(seg))){var raw=m[0],lead=raw.length-raw.replace(/^\s+/,'').length,s=m.index+lead;raw=raw.slice(lead);
+  var cur=m[1],u=(m[4]||'').toLowerCase(),att=/\d[bB]$/.test(raw),nx=seg.charAt(m.index+m[0].length);
+  if(!((cur||/^(trillion|billion|million|thousand|bn|mm)$/.test(u)||(u==='b'&&att))&&nx!=='%'))continue;
+  var n=parseFloat((m[2]+(m[3]||'')).replace(/,/g,'')),mul=null;
+  if(u==='trillion')mul=1000;else if(/^(billion|bn|b)$/.test(u))mul=1;else if(/^(million|mm|m)$/.test(u))mul=1e-3;else if(/^(thousand|k)$/.test(u))mul=1e-6;
+  o.push({raw:raw,s:s,e:s+raw.length,usdB:mul===null?null:n*mul,approx:/(approximately|about|roughly|around|nearly|~|\u2248|estimated)\s*$/i.test(seg.slice(Math.max(0,s-22),s))})}
+ return o}
+function role2(seg,a){var best=null;
+ RC.forEach(function(rc){findAll(rc[1],seg,'x').forEach(function(m){var d=m.e<=a.s?a.s-m.e:(m.s>=a.e?m.s-a.e:0),sc=d-rc[2];if(d<=120&&(!best||sc<best.sc))best={sc:sc,k:rc[0],cue:m.t}})});
+ return best||{k:'other',cue:''}}
+function recog(k,seg){
+ if(k==='guar'||k==='max')return CONREC.test(seg)?'The text says a liability was recorded for the guarantee. Check the recorded amount separately from this threshold.':'Disclosed threshold or exposure measure. This passage does not state a recognized liability for it, so it is not treated as debt.';
+ if(k==='lease')return 'Future lease commitment, not a reported debt amount.'+(/lease liabilit/i.test(seg)?' The passage also mentions lease liabilities: check what is recorded.':'');
+ if(k==='dev')return 'Development commitment: a future spending obligation, not debt unless funded or recorded.';
+ if(k==='eq')return 'Equity investment: carried as an investment, not as borrowed money.';
+ if(k==='hist')return 'Historical transaction that has already occurred. Check whether it appears on Meta\'s balance sheet.';
+ return 'The wording does not make the role clear. Read the passage.'}
+function classify2(s){var c;
+ if(CONCL.test(s)&&!CON.test(s)&&!FINSTRICT.test(s)){var m=s.match(CONCL);return{cls:'c810',why:'“'+m[0]+'” (ASC 810 consolidation conclusion, not a financing commitment)'}}
+ if(c=cue(ISS2,s))return{cls:'off',why:'“'+c+'” (debt issued by the venture itself, not automatically Meta\'s own liability)'};
+ var r0=classify(s);
+ if(r0.cls==='unk'){var m2;
+  if(LEASEW.test(s)&&(m2=s.match(FUTL)))return{cls:'lfc',why:'“'+m2[0]+'” (lease signed but not yet commenced)'};
+  if(m2=s.match(HISTP))return{cls:'hist',why:'“'+m2[0]+'” (past transaction at venture formation)'}}
+ return r0}
+function snip2(seg,a){return (a.s>70?'…':'')+esc(seg.slice(Math.max(0,a.s-70),a.s))+'<span class="amt">'+esc(seg.slice(a.s,a.e))+'</span>'+esc(seg.slice(a.e,a.e+70))+(seg.length>a.e+70?'…':'')}
+function conv2(a,un){return a.usdB!==null?'= $'+(a.usdB<0.01?a.usdB.toFixed(4):a.usdB.toFixed(3).replace(/\.?0+$/,''))+'B'+(a.approx?' (approximate, as written)':''):'unit not stated in this passage'+(un?' (the text says “'+esc(un[0])+'” elsewhere; not converted)':'')}
+function validate2(ALL){
+ var nf=0,h='<h3 style="font-size:17px;margin:18px 0 8px">Validation against the seven expected Exhibit 8 amounts</h3><div class="chartbox"><table class="cmp"><thead><tr><th>Expected</th><th>Status</th><th>Detected role(s)</th><th>First source snippet</th></tr></thead><tbody>';
+ EXP.forEach(function(e){var hit=ALL.filter(function(a){return a.usdB!==null&&Math.abs(a.usdB-e[0])<0.0051}),rl=[];
+  if(hit.length)nf++;
+  hit.forEach(function(a){var n=ROLE[a.role].n;if(rl.indexOf(n)<0)rl.push(n)});
+  h+='<tr><th>'+e[1]+'</th><td>'+(hit.length?'<span class="pill pr">✓ Found'+(hit.length>1?' ×'+hit.length:'')+'</span>':'<span class="pill ph">✕ Not found</span>')+'</td><td>'+(rl.join('; ')||'-')+'</td><td style="font-size:13px">'+(hit.length?snip2(hit[0].seg,hit[0]):'-')+'</td></tr>'});
+ return h+'</tbody></table></div><p class="note">'+nf+' of 7 expected amounts found. These amounts are never added together because some overlap, for example the maximum exposure to loss may include the lease and guarantee amounts. This table is meaningful only when the Exhibit 8 text is pasted.</p>'}
+function analyze(){
+ var txt=$('fn').value.trim(),out=$('obsOut');
+ if(!txt){out.innerHTML='<p class="note">Paste footnote text above, or load a sample or the case summary, then click Analyze disclosures.</p>';priEmpty('Run the detector to see priority passages.');return}
+ var un=/in (millions|billions|thousands)/i.exec(txt),F=[],ALL=[],counts={},plainP=[],nA=0;
+ paras2(txt).forEach(function(p){var pl=[];
+  sents2(p).forEach(function(seg){
+   var tp=[],rs=[];for(var k in TOP){var f=findAll(TOP[k].re,seg,'kw');f.forEach(function(x){x.tp=k});if(f.length){tp.push(k);rs=rs.concat(f)}}
+   if(CONCL.test(seg)&&!FINSTRICT.test(seg)){tp=tp.filter(function(k){return k!=='fin'});rs=rs.filter(function(r){return r.tp!=='fin'})}
+   var am=ext(seg);
+   if(!tp.length&&!am.length){pl.push(esc(seg));return}
+   if(!tp.length)tp=['amt'];
+   am.forEach(function(a){var r=role2(seg,a);a.role=r.k;a.cue=r.cue;a.seg=seg;rs.push({s:a.s,e:a.e,k:'amt'});ALL.push(a)});
+   findAll(/\d+(?:\.\d+)?\s?%/,seg,'amt').forEach(function(x){rs.push(x)});
+   var c=classify2(seg);counts[c.cls]=(counts[c.cls]||0)+1;nA+=am.length;
+   var h=mark(seg,rs);pl.push('<span class="hl c-'+c.cls+'" title="'+CL[c.cls].n+'">'+h+'</span>');
+   F.push({seg:seg,tp:tp,cls:c.cls,why:c.why,am:am,html:h})});
+  plainP.push(pl.join(' '))});
+ if(!F.length){out.innerHTML='<p class="note">No VIE, lease, guarantee, commitment, equity-investment, debt or amount wording was found. Try pasting a fuller footnote.</p>';priEmpty('No priority passages: nothing was flagged.');return}
+ var h='<div class="stats"><span class="stat"><b>'+F.length+'</b> passages flagged</span><span class="stat"><b>'+nA+'</b> amounts extracted</span>';
+ for(var k in CL){if(counts[k])h+='<span class="stat"><span class="dot" style="background:'+CL[k].c+'"></span>'+CL[k].n+': <b>'+counts[k]+'</b></span>'}
+ h+='</div>';
+ var hMain=h;h='';
+ // Triage only: scoring is a navigation aid, not a verified accounting classification.
+ function scoreFinding(f){
+  var t=f.seg.toLowerCase(),z=0;
+  if(/variable interest entit|primary beneficiary|not consolidat|residual value guarant|maximum exposure to loss/.test(t))z+=8;
+  if(/lease commitment|not yet commenced|future minimum lease|purchase obligation|contractual obligation|guarantee|commitment/.test(t))z+=5;
+  if(/\b(27|28|45\.95|12\.31)\s*billion\b/.test(t))z+=2;
+  if(f.am.some(function(a){return a.usdB!==null}))z+=3;
+  if(f.cls==='unk')z-=3;
+  if(/forward-looking statements|our products|advertising campaigns|recommend relevant content|our marketers/.test(t))z-=9;
+  return z;
+ }
+ var ranked=F.map(function(f,i){return{f:f,i:i,score:scoreFinding(f)}}).sort(function(a,b){return b.score-a.score||a.i-b.i});
+ var seenPriority={};
+ var top=ranked.filter(function(x){
+  if(x.score<5)return false;
+  var key=x.f.seg.toLowerCase().replace(/\s+/g,' ').trim();
+  if(seenPriority[key])return false;
+  seenPriority[key]=true;return true;
+ }).slice(0,15);
+ h+='<div class="panel2"><h3 style="margin:0 0 6px">Priority review — up to 15 passages</h3><p class="note">Heuristic ranking only, not confirmed liabilities or a complete audit. Verify each item in the SEC filing. Amounts may overlap.</p>';
+ if(!top.length)h+='<p>No high-priority passages identified by these rules.</p>';
+ top.forEach(function(x,j){var f=x.f,c=CL[f.cls];h+='<div class="find" style="border-left-color:'+c.c+'"><b>#'+(j+1)+' — '+esc(c.n)+'</b> <span class="chip">Review score '+x.score+'</span><div class="src">'+f.html+'</div>'+(f.am.length?'<p class="out">Extracted amounts: '+f.am.map(function(a){return esc(a.raw)}).join('; ')+'</p>':'<p class="out">No monetary amount in this passage</p>')+'</div>'});
+ h+='</div>';
+ var hPri=h;h=hMain;
+ h+='<details><summary>Full highlighted text (very long)</summary><div><div class="annot">'+plainP.join('\n\n')+'</div></div></details>';
+
+ h+='<p class="note">Shading shows the passage classification. Underlined words are matched keywords. White tags are extracted amounts and percentages.</p>';
+ h+='<details class="meta-only"><summary>Case-only validation (seven Exhibit 8 amounts; not applicable to a full 10-K)</summary><div>'+validate2(ALL)+'</div></details><div id="whatif" class="whatif meta-only"></div><details><summary>All '+F.length+' findings (detailed review)</summary><div>';
+ F.forEach(function(f){var c=CL[f.cls];
+  h+='<div class="find" style="border-left-color:'+c.c+'"><div><span class="cls" style="background:'+c.c+'">'+c.n+'</span>'+f.tp.map(function(k){return'<span class="chip">'+TOP[k].n+'</span>'}).join('')+'</div>';
+  h+='<div class="src"><b>Source passage:</b> “'+f.html+'”</div><div style="font-size:13px;color:var(--mute)">Why this class: '+esc(f.why)+'</div>';
+  if(f.am.length)f.am.forEach(function(a){var r=ROLE[a.role],nd=notDebt(a,f.seg,f.cls);
+   h+='<div class="amtrow"><label>'+(a.usdB!==null?(nd?'<input type="checkbox" class="meta-only" disabled aria-label="Not debt: testing disabled" title="Not debt">':'<input type="checkbox" class="wi meta-only" data-v="'+a.usdB+'" aria-label="Test as hypothetical debt">'):'<span style="width:13px"></span>')+'<span><b>'+esc(a.raw)+'</b> '+conv2(a,un)+' <span class="chip" style="color:'+r.c+';border-color:'+r.c+'">'+r.n+'</span>'+(a.usdB!==null?(nd?'<span class="meta-only"> &middot; not debt, so testing it as debt is disabled</span>':'<span class="meta-only"> &middot; tick to test as hypothetical debt</span>'):'')+'<div class="ctx">'+recog(a.role,f.seg)+(a.cue?' (role cue: “'+esc(a.cue)+'”)':'')+'</div><div class="ctx">Source: '+snip2(f.seg,a)+'</div></span></label></div>'});
+  else h+='<div style="font-size:13px;color:var(--mute);margin-top:6px">No amount stated in this passage.</div>';
+  h+='<div class="imp"><b>Leverage impact:</b> '+c.imp;
+  f.tp.forEach(function(k){if(TIP[k])h+=' <i>'+TIP[k]+'</i>'});
+  h+='</div></div>'});
+ h+='</div></details><details class="rules"><summary>Extraction rules in this version</summary><div><ul><li>Hard-wrapped lines are rejoined, and a sentence ends only at . ! or ? followed by a capital letter. Decimals and abbreviations such as U.S. do not split a sentence.</li><li>Amounts are read from every sentence, whether or not it contains a keyword, in forms like $4.30B, $27 billion, USD 12.31 billion, approximately $28B.</li><li>Each amount gets its own role from the nearest cue words in its sentence, so one sentence can hold several roles.</li><li>Sentences about not being the primary beneficiary or not consolidating are classed as ASC 810 conclusions, not financing commitments.</li><li>Guarantee and exposure amounts are disclosed measures, not recognized liabilities, unless the text says a liability was recorded.</li></ul></div></details>';
+ out.innerHTML=h;$('priorityOut').innerHTML=hPri;DETECTED=ALL;detReset();
+ document.querySelectorAll('.wi').forEach(function(x){x.addEventListener('change',whatIf)});
+ whatIf();
+ updateAdjusted()}
+function updateAdjusted(){
+ var out=$('adjResult');if(!out)return;
+ var D=+$('D').value,E=+$('E').value,B=+$('B').value,N=+$('N').value;
+ var vie=$('adjVie').checked,lease=$('adjLease').checked,guar=$('adjGuarantee').checked;
+ var add=vie?B:0,eq=vie?N:0,stress=lease?12.31:(guar?28:0);
+ var base=100*D/E,adjusted=100*(D+add+stress)/(E+eq);
+ var label=lease?'Future lease stress scenario':(guar?'Guarantee threshold stress scenario':'No extra lease/guarantee stress');
+ out.innerHTML='<span class="b b-rep">REPORTED</span> <b>Reported case D/E: '+f1(base)+'%</b><p>('+f1(D)+' / '+f1(E)+')</p><span class="b b-hyp">HYPOTHETICAL</span> <b>Selected hypothetical adjusted D/E: '+f1(adjusted)+'%</b><p>('+f1(D)+' + '+f1(add)+' + '+f1(stress)+') / ('+f1(E)+' + '+f1(eq)+') = '+f1(adjusted)+'%</p><p>Change: '+(adjusted-base>=0?'+':'')+f1(adjusted-base)+' percentage points. '+label+'.</p>';
+ var src=$('adjSource');if(src)src.textContent='Inputs: case-study baseline and current sliders. The displayed detector passages are screening evidence, not independently verified adjustment amounts. Only the VIE consolidation case (with no other stress selected) matches the professor’s simplified $27B / $2.5B illustration.';
+}
+["D","E","B","N"].forEach(function(k){$(k).addEventListener("input",function(){whatIf();updateAdjusted()})});
+$("reset").addEventListener("click",function(){whatIf();updateAdjusted()});
+/* ---- AI Financial Analysis (interface only) ---- */
+var AIS=[
+ {t:'Fetch Report',st:'nc',d:'Retrieve the selected annual (10-K) or quarterly (10-Q) filing for the selected company.',now:'Nothing is retrieved. The Fetch report button only explains what is missing.',need:'A filing-data integration (for example SEC EDGAR or a data-provider API) reached through a server-side backend. This page cannot fetch filings by itself.'},
+ {t:'Read Disclosures',st:'part',d:'Locate and read the footnotes on VIEs, leases, guarantees and financing commitments.',now:'Manual: paste footnote text into the Off-Balance-Sheet Detector.',need:'Automatic reading needs document retrieval and a parser for HTML, PDF or XBRL filings.'},
+ {t:'Extract & Classify',st:'ok',d:'Find monetary amounts and classify them with transparent text-pattern rules.',now:'Available: the rule-based Off-Balance-Sheet Detector works on text you paste. It is rule-based, not AI.',need:''},
+ {t:'Compute Ratios',st:'ok',d:'Compute reported and hypothetical debt-to-equity ratios.',now:'Available: the verified calculations, linked to the sliders on this page.',need:''},
+ {t:'Generate Insights',st:'nc',d:'Write an AI interpretation of the extracted data and ratios.',now:'Nothing is generated.',need:'An AI backend with secure API-key storage, the retrieved filing text, and validation of its output against the verified calculations.'}
+];
+var STL={nc:['b-nc','Not connected'],part:['b-part','Partly available (manual)'],ok:['b-ok','Available']};
+var aiStep=0;
+function aiSteps(){
+ $('aiSteps').innerHTML=AIS.map(function(s,i){return '<button class="stp'+(i===aiStep?' on':'')+'" data-i="'+i+'" aria-pressed="'+(i===aiStep)+'"><span class="num">'+(i+1)+'</span><b>'+s.t+'</b><span class="b '+STL[s.st][0]+'">'+STL[s.st][1]+'</span></button>'}).join('');
+ document.querySelectorAll('#aiSteps .stp').forEach(function(b){b.onclick=function(){aiStep=+b.dataset.i;aiSteps()}});
+ var s=AIS[aiStep];
+ $('aiStepBody').innerHTML='<b style="font-size:16px">Step '+(aiStep+1)+': '+s.t+'</b> <span class="b '+STL[s.st][0]+'">'+STL[s.st][1]+'</span><p style="margin:8px 0 4px">'+s.d+'</p><p style="margin:4px 0"><b>Right now:</b> '+s.now+'</p>'+(s.need?'<p style="margin:4px 0"><b>Integration required:</b> '+s.need+'</p>':'');
+}
+function aiPerV1(){
+ var q=$('aiType').value==='q';
+ $('aiPer').innerHTML=q?'<option>No quarterly case data loaded</option><option disabled>Quarterly filings (not connected)</option>':'<option>FY2025: HBS case-study data</option><option disabled>Other fiscal years (not connected)</option>';
+ $('aiStatus').innerHTML='<div class="nc-box"><span class="b b-nc">Not connected</span> '+(q?'<b>No quarterly data is loaded.</b> The case study covers annual FY2025 figures only, and quarterly retrieval is not connected.':'<b>Live retrieval is not connected.</b> The figures below are case-study data for FY2025, not a fetched filing.')+'</div>';
+}
+function aiRatios(){
+ var D=+$('D').value,E=+$('E').value,B=+$('B').value,N=+$('N').value,r=D/E*100,h=(D+B)/(E+N)*100,def=(D===59&&E===217&&B===27&&N===2.5);
+ $('aiR').textContent=f1(r)+'%';$('aiH').textContent=f1(h)+'%';
+ $('aiRf').textContent=f1(D)+' / '+f1(E);$('aiHf').textContent='('+f1(D)+' + '+f1(B)+') / ('+f1(E)+' + '+f1(N)+')';
+ $('aiRn').textContent=def?'Using the case figures. Ratios are linked to the verified calculations and update with the sliders below.':'Using your slider values, which differ from the case figures. Reset the inputs to return to the case figures.';
+ $('aiHyp').textContent='If Hyperion were consolidated, debt-to-equity would move from '+f1(r)+'% to '+f1(h)+'% on the current inputs. This is not Meta\u2019s reported result.';
+}
+$('aiType').addEventListener('change',aiPer);
+$('aiFetch').onclick=function(){$('aiStatus').innerHTML='<div class="nc-box"><span class="b b-nc">Not connected</span> <b>No report was fetched.</b> Retrieving a filing needs a filing-data integration (for example SEC EDGAR or a data-provider API) through a server-side backend. Until then, paste disclosure text into the Off-Balance-Sheet Detector.</div>';aiStep=0;aiSteps()};
+$('aiGoDet').onclick=function(){$('obs').scrollIntoView({behavior:'smooth'})};
+['D','E','B','N'].forEach(function(k){$(k).addEventListener('input',aiRatios)});
+$('reset').addEventListener('click',aiRatios);
+/* ---- SEC EDGAR backend connection (no simulated data) ---- */
+STL.ver=['b-ok','Backend verified'];STL.got=['b-ok','Filing metadata retrieved'];
+var EDG={url:'',state:'idle',filings:[],busy:false,co:null,at:null,src:null};
+try{var sv=localStorage.getItem('metaRiskBackendUrl');if(sv){EDG.url=sv;$('aiUrl').value=sv}}catch(e){}
+function eBase(){return EDG.url.replace(/\/+$/,'')}
+function safeSec(u){try{var x=new URL(u);return x.protocol==='https:'&&(x.hostname==='sec.gov'||/\.sec\.gov$/.test(x.hostname))}catch(e){return false}}
+function eBox(k,h){$('aiStatus').innerHTML='<div class="'+(k==='ok'?'ok-box':(k==='ld'?'ld-box':'nc-box'))+'" role="status" aria-live="polite">'+h+'</div>'}
+function eErr(r){var e=r.json&&r.json.error;return e?'HTTP '+r.status+' ('+esc(String(e.code||'error'))+'): '+esc(String(e.message||'no message')):'HTTP '+r.status+' with no JSON error body.'}
+function eNet(e){return e&&e.name==='AbortError'?'The request timed out.':'The request could not be completed. Possible causes: the URL is wrong or the server is down; the server does not allow this page\'s origin (CORS); an https page cannot call an http URL; or this page is viewed as a published Artifact, whose security policy blocks requests to other sites.'}
+function eReq(path,ms){
+ var ac=new AbortController(),t=setTimeout(function(){ac.abort()},ms);
+ return fetch(eBase()+path,{method:'GET',headers:{'Accept':'application/json'},signal:ac.signal,mode:'cors',credentials:'omit'}).then(function(r){clearTimeout(t);return r.text().then(function(tx){var j=null;try{j=JSON.parse(tx)}catch(e){}return{ok:r.ok,status:r.status,json:j}})},function(e){clearTimeout(t);throw e})}
+function eRender(){
+ if($('aiLoadDisclosure'))$('aiLoadDisclosure').disabled=!(EDG.state==='verified'&&EDG.filings.length&&!EDG.busy);
+ var s=EDG.state,v=s==='verified',got=EDG.filings.length>0,ch;
+ if(s==='testing')ch=['b-part','Testing\u2026'];else if(v)ch=['b-ok','Verified'];else if(s==='failed')ch=['b-nc','Connection failed'];else ch=EDG.url?['b-part','Not verified']:['b-nc','Not connected'];
+ $('aiConn').className='b '+ch[0];$('aiConn').textContent=ch[1];
+ $('aiTest').disabled=s==='testing'||EDG.busy;$('aiTest').textContent=s==='testing'?'Testing\u2026':'Test Connection';
+ $('aiFetch').disabled=!v||EDG.busy;$('aiFetch').textContent=EDG.busy?'Fetching\u2026':'Fetch report';
+ $('aiHint').style.display=v?'none':'block';
+ AIS[0].st=v?(got?'got':'ver'):'nc';
+ AIS[0].now=got?'Filing metadata was returned by your backend. No financial figures have been extracted.':(v?'Your backend answered the health check. Press Fetch report to request filing metadata.':'Nothing is retrieved. The backend is not connected or not verified.');
+ $('aiIntSearch').innerHTML=got?'<span class="b b-ok">Filing metadata retrieved</span>':(v?'<span class="b b-ok">Backend verified</span>':'<span class="b b-nc">Not connected</span>');
+ aiSteps()}
+function eTest(){
+ var u=$('aiUrl').value.trim();EDG.url=u;EDG.filings=[];$('aiFiling').innerHTML='';
+ try{localStorage.setItem('metaRiskBackendUrl',u)}catch(e){}
+ if(!u){EDG.state='idle';eBox('nc','<span class="b b-nc">Not connected</span> Enter a backend URL first.');eRender();return}
+ if(!/^https?:\/\//i.test(u)){EDG.state='failed';eBox('nc','<span class="b b-nc">Connection failed</span> The URL must start with http:// or https://.');eRender();return}
+ EDG.state='testing';eBox('ld','<span class="spin"></span>Testing '+esc(eBase())+'/api/health \u2026');eRender();
+ eReq('/api/health',8000).then(function(r){
+  if(r.ok&&r.json&&r.json.status==='ok'){EDG.state='verified';
+   var w=r.json.secUserAgentConfigured===false?' <b>Warning:</b> the backend reports that no SEC User-Agent is configured, so SEC requests may be rejected.':'';
+   eBox('ok','<span class="b b-ok">Verified</span> The backend answered /api/health with status ok'+(r.json.service?' (service: '+esc(String(r.json.service))+(r.json.version?', version '+esc(String(r.json.version)):'')+')':'')+'. Press Fetch report to request filing metadata.'+w)}
+  else{EDG.state='failed';eBox('nc','<span class="b b-nc">Connection failed</span> /api/health did not return {"status":"ok"}. '+(r.ok?'The response was not the expected JSON.':eErr(r)))}
+  eRender()}).catch(function(e){EDG.state='failed';eBox('nc','<span class="b b-nc">Connection failed</span> '+eNet(e));eRender()})}
+function eShow(i){
+ var f=EDG.filings[i]||{},co=EDG.co||{};
+ function v(x){return x?esc(String(x)):'<i style="color:var(--mute)">Not provided by backend</i>'}
+ function d(x){return x&&!/^\d{4}-\d{2}-\d{2}$/.test(String(x))?esc(String(x))+' <i style="color:var(--mute)">(unexpected date format)</i>':v(x)}
+ var u=f.sourceUrl,link=!u?v(u):(safeSec(u)?'<a href="'+esc(String(u))+'" target="_blank" rel="noopener noreferrer" style="color:var(--sky)">'+esc(String(u))+'</a>':esc(String(u))+' <span class="b b-nc">not an https sec.gov URL, so not linked</span>');
+ $('aiFiling').innerHTML='<div class="panel2"><b style="font-size:16px">Retrieved filing</b> <span class="b b-ok">Retrieved from your backend</span><div class="chartbox"><table class="cmp" style="min-width:420px"><tbody>'
+ +'<tr><th>Company</th><td>'+v(co.name)+(co.ticker?' ('+esc(String(co.ticker))+')':'')+'</td></tr>'
+ +'<tr><th>Form</th><td>'+v(f.form)+'</td></tr>'
+ +'<tr><th>Filing date</th><td>'+d(f.filingDate)+'</td></tr>'
+ +'<tr><th>Reporting period</th><td>'+d(f.reportDate)+'</td></tr>'
+ +'<tr><th>Accession number</th><td>'+v(f.accessionNumber)+'</td></tr>'
+ +'<tr><th>Official source URL</th><td style="word-break:break-all">'+link+'</td></tr>'
+ +'<tr><th>Retrieval status</th><td>Retrieved'+(EDG.at?' at '+esc(String(EDG.at)):' (retrieval time not provided)')+(EDG.src?'. Source reported by backend: '+esc(String(EDG.src)):'')+'</td></tr>'
+ +'</tbody></table></div><p class="note">Filing metadata only. Use "Load filing disclosures into detector" to download selected excerpts and run the rule-based analysis. This does not change the case-study data or ratios.</p></div>'}
+function eFetch(){
+ if(EDG.state!=='verified'||EDG.busy)return;
+ var form=$('aiType').value==='q'?'10-Q':'10-K';
+ EDG.busy=true;EDG.filings=[];$('aiFiling').innerHTML='';
+ eBox('ld','<span class="spin"></span>Requesting '+form+' filings for META from your backend \u2026');eRender();
+ eReq('/api/filings?ticker=META&form='+form+'&limit=8',20000).then(function(r){
+  EDG.busy=false;
+  if(!r.ok){eBox('nc','<span class="b b-nc">Retrieval failed</span> '+eErr(r));eRender();return}
+  var L=r.json&&Array.isArray(r.json.filings)?r.json.filings.filter(function(x){return x&&typeof x==='object'}):null;
+  if(!L){eBox('nc','<span class="b b-nc">Retrieval failed</span> The response did not contain a filings array, so nothing is shown.');eRender();return}
+  if(!L.length){eBox('nc','<span class="b b-part">No filings returned</span> The backend returned an empty list for '+form+'. Nothing is shown.');eRender();return}
+  EDG.filings=L;EDG.co=r.json.company||null;EDG.at=r.json.retrievedAt||null;EDG.src=r.json.source||null;
+  $('aiPer').innerHTML=L.map(function(f){return '<option>'+esc(String(f.form||form))+' filed '+esc(String(f.filingDate||'date not provided'))+' (period '+esc(String(f.reportDate||'not provided'))+')</option>'}).join('');
+  eBox('ok','<span class="b b-ok">Retrieval complete</span> The backend returned '+L.length+' '+form+' filing'+(L.length>1?'s':'')+'. Choose a reporting period to view its details.');
+  eShow(0);eRender()}).catch(function(e){EDG.busy=false;eBox('nc','<span class="b b-nc">Retrieval failed</span> '+eNet(e));eRender()})}
+function aiPer(){
+ EDG.filings=[];$('aiFiling').innerHTML='';
+ $('aiPer').innerHTML='<option>No filing retrieved yet</option>';
+ if(EDG.state==='verified')eBox('ok','<span class="b b-ok">Backend verified</span> Choose a report type and press <b>Fetch report</b>.');
+ else if(EDG.state==='failed')eBox('nc','<span class="b b-nc">Connection failed</span> Check the backend URL and press Test Connection again.');
+ else eBox('nc','<span class="b b-nc">Not connected</span> '+(EDG.url?'Press Test Connection to verify the backend.':'Enter your backend URL and press Test Connection. Until the backend responds, nothing is retrieved.'));
+ eRender()}
+function eLoadDisclosure(){
+ if(EDG.state!=='verified'||!EDG.filings.length||EDG.busy)return;
+ var f=EDG.filings[$('aiPer').selectedIndex]||EDG.filings[0];
+ if(!/^\d{10}-\d{2}-\d{6}$/.test(f.accessionNumber||'')){eBox('nc','Invalid filing accession number.');return}
+ EDG.busy=true;eRender();
+ $('aiLoadDisclosure').textContent='Downloading filing excerpts…';
+ eBox('ld','<span class="spin"></span>Downloading official SEC filing and selecting relevant disclosure excerpts. This can take up to 30 seconds…');
+ eReq('/api/filings/'+encodeURIComponent(f.accessionNumber)+'/text',40000).then(function(r){
+  EDG.busy=false;$('aiLoadDisclosure').textContent='Load filing disclosures into detector';eRender();
+  if(!r.ok||!r.json||typeof r.json.text!=='string'){eBox('nc','<span class="b b-nc">Download failed</span> '+eErr(r));return}
+  if(!r.json.text.trim()){eBox('nc','<span class="b b-part">No relevant excerpts found</span> Check the original filing.');return}
+  $('fn').value=r.json.text;
+  $('caseNote').style.display='none';
+  analyze();
+  eBox('ok','<span class="b b-ok">Disclosures loaded</span> '+(r.json.excerpts||[]).length+' keyword-selected passages from the SEC filing were sent to the rule-based detector. These are partial excerpts, not the full filing. Verify amounts and context against the original report.');
+  $('obs').scrollIntoView({behavior:'smooth',block:'start'});
+ }).catch(function(e){EDG.busy=false;$('aiLoadDisclosure').textContent='Load filing disclosures into detector';eRender();eBox('nc','<span class="b b-nc">Download failed</span> '+eNet(e))})
+}
+$('aiLoadDisclosure').onclick=eLoadDisclosure;
+$('aiTest').onclick=eTest;
+$('aiFetch').onclick=eFetch;
+$('aiUrl').addEventListener('keydown',function(e){if(e.key==='Enter')eTest()});
+$('aiUrl').addEventListener('input',function(){if(EDG.state!=='testing'&&!EDG.busy){EDG.state='idle';EDG.url=this.value.trim();aiPer()}});
+$('aiPer').addEventListener('change',function(){if(EDG.filings.length)eShow(this.selectedIndex)});
+/* ---- Published prototype: backend features disabled ---- */
+var BACKEND_OFF=true;
+function eRender(){
+ ['aiUrl','aiTest','aiFetch','aiLoadDisclosure','aiType','aiPer'].forEach(function(i){var e=$(i);if(e)e.disabled=true});
+ $('aiUrl').value='';
+ $('aiConn').className='b b-nc';$('aiConn').textContent='Not available in this prototype';
+ AIS[0].st='nc';AIS[0].now='Disabled: a published Artifact cannot call a backend. No report is retrieved.';
+ $('aiIntSearch').innerHTML='<span class="b b-nc">Not available</span>';
+ aiSteps()}
+function eTest(){}function eFetch(){}function eLoadDisclosure(){}
+function aiPer(){
+ EDG.filings=[];$('aiFiling').innerHTML='';
+ $('aiPer').innerHTML='<option>No filing retrieved (live retrieval not available)</option>';
+ eBox('nc','<span class="b b-nc">Not available in this prototype</span> <b>Live SEC retrieval is not available here.</b> The Meta&ndash;Hyperion figures below are case-study data, and the detector works on the preloaded sample or text you paste.');
+ eRender()}
+aiPer();aiSteps();aiRatios();
+/* ---- Presentation layer ---- */
+function priEmpty(m){$('priorityOut').innerHTML='<p class="note">'+m+'</p>';DETECTED=[];detReset()}
+function renderScenarios(){
+ var D=+$('D').value,E=+$('E').value,B=+$('B').value,N=+$('N').value,L=12.31,G=28;
+ var S=[['Baseline: reported case',0,D/E*100,f1(D)+' / '+f1(E),'REPORTED'],
+  ['1. Consolidate Hyperion VIE',1,(D+B)/(E+N)*100,'('+f1(D)+' + '+f1(B)+') / ('+f1(E)+' + '+f1(N)+')','HYPOTHETICAL'],
+  ['2. Lease commitment stress',1,(D+L)/E*100,'('+f1(D)+' + 12.31) / '+f1(E),'HYPOTHETICAL'],
+  ['3. Guarantee threshold stress',1,(D+G)/E*100,'('+f1(D)+' + 28) / '+f1(E),'HYPOTHETICAL']];
+ var mx=Math.max.apply(null,S.map(function(x){return x[2]}))*1.1;
+ $('topStrip').innerHTML=S.map(function(x){return '<div class="sc'+(x[1]?' h':'')+'"><small>'+x[0]+'</small><div class="v">'+f1(x[2])+'%</div><small>'+x[4]+'</small></div>'}).join('');
+ $('scenCards').innerHTML=S.map(function(x){return '<div class="kpi'+(x[1]?' h':'')+' sm"><span class="badge">'+x[4]+'</span><small>'+x[0]+'</small><div class="n">'+f1(x[2])+'%</div><small>'+x[3]+'</small></div>'}).join('');
+ $('scenBars').innerHTML=S.map(function(x){return '<div class="sbar"><span class="t">'+x[0]+'</span><span class="tr"><span style="width:'+(x[2]/mx*100)+'%;background:'+(x[1]?'#ffb547':'#2f8bff')+'"></span></span><span class="p">'+f1(x[2])+'%</span></div>'}).join('');
+ var def=(D===59&&E===217&&B===27&&N===2.5);
+ $('scenNote').textContent=def?'Using the case figures. Each scenario is shown on its own, and none is a reported Meta amount.':'Using your slider values, which differ from the case figures. The lease ($12.31B) and guarantee ($28B) amounts are fixed case inputs.';
+}
+['D','E','B','N'].forEach(function(k){$(k).addEventListener('input',renderScenarios)});
+$('reset').addEventListener('click',renderScenarios);
+['adjVie','adjLease','adjGuarantee'].forEach(function(id){$(id).addEventListener('change',function(){
+ if(id==='adjLease'&&this.checked)$('adjGuarantee').checked=false;
+ if(id==='adjGuarantee'&&this.checked)$('adjLease').checked=false;
+ updateAdjusted()})});
+document.querySelectorAll('#navRow [data-go]').forEach(function(b){b.onclick=function(){var t=b.dataset.go;if(t==='tech')$('tech').open=true;$(t).scrollIntoView({behavior:'smooth',block:'start'})}});
+$('goInputs').onclick=function(){$('inputsSec').scrollIntoView({behavior:'smooth',block:'start'})};
+/* ---- Detected Amounts: analyst-reviewed leverage ---- */
+var DETECTED=DETECTED||[],DST=DST||[];
+var OVL=['lease','guar','max'];
+function fmtN(x){return String(Math.round(x*1000)/1000)}
+function fullSrc(a){return esc(a.seg.slice(0,a.s))+'<span class="amt">'+esc(a.seg.slice(a.s,a.e))+'</span>'+esc(a.seg.slice(a.e))}
+function detCompute(items,st,D,E){
+ var seen={},grp=-1,debt=[],eq=[],status=[],W=[];
+ function w(m){if(W.indexOf(m)<0)W.push(m)}
+ items.forEach(function(a,i){var q=st[i]||{};
+  if(!q.on){status.push('');return}
+  if(a.usdB===null){status.push('unit');return}
+  if(!q.t){status.push('needs');return}
+  if(q.t==='excl'){status.push('excl');return}
+  var key=a.usdB.toFixed(4)+'|'+q.t;
+  if(key in seen){status.push('dup');return}
+  if(q.t==='debt'&&OVL.indexOf(a.role)>=0){if(grp>=0){status.push('ovl');return}grp=i}
+  seen[key]=i;(q.t==='debt'?debt:eq).push(i);status.push('ok')});
+ var sd=0,se=0;debt.forEach(function(i){sd+=items[i].usdB});eq.forEach(function(i){se+=items[i].usdB});
+ if(status.indexOf('ovl')>=0)w('Overlap prevented: lease commitments, guarantee thresholds and maximum exposure to loss can overlap, so only the first selected one is counted. Deselect it to use another.');
+ if(status.indexOf('dup')>=0)w('Duplicate prevented: an amount with the same value and treatment is counted only once.');
+ if(status.indexOf('needs')>=0)w('Some selected amounts have no confirmed treatment and are not counted.');
+ debt.forEach(function(i){var a=items[i];
+  w('Selected amounts are hypothetical stress tests. None is a recognized liability unless the passage says it was recorded.');
+  if(a.role==='max')w('Maximum exposure to loss is a disclosure measure that may already include lease and guarantee amounts. Treating it as debt is an extreme stress.');
+  if(a.role==='guar')w('A guarantee threshold is a contingent amount, not an expected payment.');
+  if(a.role==='lease')w('A future lease commitment is not recognized debt. This assumes the full amount becomes incremental debt.');
+  if(a.role==='hist')w('A historical transaction is usually not debt. Confirm that this one is.');
+  if(a.role==='eq')w('An equity investment is usually not borrowing. Confirm that this one is.');
+  if(a.cls==='rep')w('One counted amount is worded as a reported liability and may already be inside the reported debt baseline, which would double-count it.')});
+ return{debt:debt,eq:eq,status:status,warn:W,sumD:sd,sumE:se,D:D,E:E,base:D/E*100,ratio:(D+sd)/(E+se)*100}}
+function detFormula(r,items){
+ var n='',d;
+ if(r.debt.length){n='('+fmtN(r.D)+r.debt.map(function(i){return' + '+fmtN(items[i].usdB)}).join('')+')'}else n=fmtN(r.D);
+ d=r.eq.length?'('+fmtN(r.E)+r.eq.map(function(i){return' + '+fmtN(items[i].usdB)}).join('')+')':fmtN(r.E);
+ return n+' / '+d+' = '+f1(r.ratio)+'%'}
+var DSTAT={'':'Not selected.',unit:'Unit not stated in the passage, so this amount cannot be used.',needs:'Selected, but the treatment is not confirmed. Not counted.',excl:'Confirmed as not debt. Not counted.',dup:'Not counted: duplicate of an amount already counted.',ovl:'Not counted: overlaps with another selected exposure.'};
+function detReset(){
+ var L=$('detList');
+ DETECTED.forEach(function(a){a.cls=classify2(a.seg).cls});
+ DST=DETECTED.map(function(){return{on:false,t:''}});
+ if(!DETECTED.length){L.innerHTML='<p class="note">No amounts were detected in the current text. Analyze text that contains explicit monetary amounts.</p>';$('detResult').innerHTML='';return}
+ L.innerHTML='<p class="note">'+DETECTED.length+' amount'+(DETECTED.length>1?'s':'')+' detected in the current text. Selections were reset because the text was analyzed again. The role shown is only the detector\u2019s suggestion.</p>'+DETECTED.map(function(a,i){var r=ROLE[a.role],ok=a.usdB!==null;
+  return '<div class="find" style="border-left-color:'+r.c+'"><label style="display:flex;gap:8px;align-items:flex-start;color:var(--text)"><input type="checkbox" data-i="'+i+'" id="dck'+i+'"'+(ok?'':' disabled')+' aria-label="Include amount"><span><b>'+esc(a.raw)+'</b> '+conv2(a,null)+' <span class="chip" style="color:'+r.c+';border-color:'+r.c+'">Detector suggestion: '+r.n+'</span></span></label>'
+  +'<select class="urlin" style="margin:8px 0 4px" data-i="'+i+'" id="dsel'+i+'"'+(ok?'':' disabled')+' aria-label="Confirm classification and treatment"><option value="">Select treatment\u2026</option><option value="debt">Confirm: incremental debt stress (add to debt)</option><option value="equity">Confirm: equity adjustment (add to equity)</option><option value="excl">Confirm: not debt (exclude)</option></select>'
+  +'<div class="ctx" style="font-size:13px;color:var(--mute)">'+recog(a.role,a.seg)+'</div><div class="src"><b>Source passage:</b> \u201c'+fullSrc(a)+'\u201d</div><div class="ctx" id="dst'+i+'" style="font-size:13px"></div></div>'}).join('');
+ detRender()}
+function detRender(){
+ var R=$('detResult');if(!DETECTED.length){R.innerHTML='';return}
+ var B0=baseDE();if(!B0.ok){R.innerHTML='<div class="nc-box"><b>Baseline needed.</b> Enter total debt (0 or more) and total equity (more than 0) in the Company Inputs panel to calculate ratios.</div>';if(MODE==='gen')$('topStrip').innerHTML='';return}
+ var D=B0.D,E=B0.E,r=detCompute(DETECTED,DST,D,E),n=r.debt.length+r.eq.length;
+ r.status.forEach(function(x,i){var el=$('dst'+i);if(!el)return;
+  el.textContent=x==='ok'?'Counted as '+(DST[i].t==='debt'?'incremental debt':'an equity adjustment')+': +$'+fmtN(DETECTED[i].usdB)+'B (hypothetical).':DSTAT[x]});
+ var h='<div class="res h">'+(MODE==='gen'?'<small>'+esc(B0.name)+' ('+esc(B0.year)+')</small><br>':'')+'<span class="b b-hyp">HYPOTHETICAL</span> <b>Analyst-reviewed adjusted D/E: '+f1(r.ratio)+'%</b>';
+ h+=n?'<div class="formula">'+detFormula(r,DETECTED)+'</div>':'<p style="margin:6px 0 0">No amount is selected and confirmed, so nothing is added. The ratio equals the baseline.</p>';
+ h+='<p style="margin:6px 0 0">'+(MODE==='gen'?'<span class="b b-in">BASELINE FROM ANALYST INPUTS</span> ':'<span class="b b-rep">REPORTED BASELINE</span> ')+f1(r.base)+'% ('+fmtN(D)+' / '+fmtN(E)+'). Change: '+(r.ratio-r.base>=0?'+':'')+f1(r.ratio-r.base)+' percentage points.</p></div>';
+ if(n){h+='<h3 style="font-size:16px;margin:14px 0 6px">Amounts counted and their sources</h3>';
+  r.debt.concat(r.eq).forEach(function(i){var a=DETECTED[i];h+='<div class="amtrow"><b>+$'+fmtN(a.usdB)+'B</b> as '+(DST[i].t==='debt'?'incremental debt':'an equity adjustment')+' (detector suggestion: '+ROLE[a.role].n+')<div class="ctx">Source passage: \u201c'+fullSrc(a)+'\u201d</div></div>'})}
+ h+='<h3 style="font-size:16px;margin:14px 0 6px">Assumptions</h3><ul class="src">'+(MODE==='gen'?'<li>Baseline debt ('+fmtN(D)+') and equity ('+fmtN(E)+') were entered by the analyst for '+esc(B0.name)+' ('+esc(B0.year)+'). They are not retrieved or verified by this tool, and they do not come from the analyzed text.</li>':'<li>Baseline debt ('+fmtN(D)+') and equity ('+fmtN(E)+') come from the case inputs above, not from the analyzed text.</li>')+'<li>Only amounts you select and confirm are added. Amounts are in USD billions, and only amounts written with a unit can be used.</li><li>Added amounts are hypothetical stress tests, not reported liabilities, and are not validated against any filing.</li></ul>';
+ if(r.warn.length)h+='<div class="nc-box" style="border-color:var(--hyp);background:#3a2a0b;color:#ffe3b8"><b style="color:var(--hyp)">Warnings</b><ul style="margin:6px 0 0;padding-left:20px">'+r.warn.map(function(m){return'<li>'+esc(m)+'</li>'}).join('')+'</ul></div>';
+ if(MODE==='gen')genStrip(r,n);R.innerHTML=h}
+$('detList').addEventListener('change',function(e){var t=e.target,i=+t.dataset.i;if(isNaN(i)||!DST[i])return;if(t.type==='checkbox')DST[i].on=t.checked;else DST[i].t=t.value;detRender()});
+['D','E'].forEach(function(k){$(k).addEventListener('input',detRender)});
+$('reset').addEventListener('click',detRender);
+renderScenarios();updateAdjusted();
+/* ---- Reusable mode: Meta case study vs. another company ---- */
+var MODE='meta',TXT={meta:'',gen:''};
+var PAGE_SUB={meta:$('pageSub').innerHTML,gen:'Paste any company\u2019s financial footnotes to detect VIEs, leases and guarantees, then test hypothetical adjusted debt-to-equity ratios. You enter the company\u2019s debt and equity. Nothing is retrieved or verified. All amounts in USD billions.'};
+var HOWTO={meta:$('howto').innerHTML,gen:'<b>How to read this mode</b>1. Enter the company\u2019s name, year, total debt and total equity (analyst inputs, unverified). 2. Paste its footnotes and run the detector, which uses text-pattern rules. 3. Select and confirm amounts in the Detected Amounts section to see hypothetical adjusted ratios. No live SEC retrieval or AI analysis is used.'};
+var OBSI={meta:$('obsIntro').innerHTML,gen:'Paste financial footnotes from any company. Plain text-pattern rules flag VIEs, leases, guarantees, commitments, equity investments and debt, and extract explicit monetary amounts. Everything runs in your browser and nothing is sent anywhere. Rule-based detection only, not AI.'};
+var DETI={meta:$('detIntro').innerHTML,gen:'Reads the amounts extracted from the <b>current detector text</b>. Nothing is included automatically: you select an amount and confirm how to treat it. Results use the debt and equity you entered and are hypothetical stress tests, not reported liabilities.'};
+var DETC={meta:$('detChips').innerHTML,gen:'<span class="b b-rb">RULE-BASED: detector suggests amounts and roles</span><span class="b b-hyp">HYPOTHETICAL: analyst-confirmed stress test</span><span class="b b-in">ANALYST INPUT: debt and equity you entered, not verified</span>'};
+var LGR={meta:$('lgRep').innerHTML,gen:'<span class="dot"></span>Analyst input: debt and equity you enter, not verified here'};
+function baseDE(){
+ if(MODE==='gen'){var D=parseFloat($('gD').value),E=parseFloat($('gE').value);
+  return{D:D,E:E,ok:isFinite(D)&&isFinite(E)&&D>=0&&E>0,name:$('gName').value.trim()||'Unnamed company',year:$('gYear').value.trim()||'year not given'}}
+ return{D:+$('D').value,E:+$('E').value,ok:true,name:'Meta Platforms',year:'2025'}}
+function genStrip(r,n){
+ $('topStrip').innerHTML='<div class="sc"><small>Baseline D/E (analyst inputs)</small><div class="v">'+f1(r.base)+'%</div><small>'+fmtN(r.D)+' / '+fmtN(r.E)+'</small></div><div class="sc h"><small>Hypothetical adjusted D/E</small><div class="v">'+f1(r.ratio)+'%</div><small>'+(n?'HYPOTHETICAL: analyst-confirmed':'no amounts confirmed yet')+'</small></div>'}
+function setMode(m){
+ if(m===MODE)return;
+ TXT[MODE]=$('fn').value;MODE=m;
+ document.body.classList.toggle('gen',m==='gen');
+ document.querySelectorAll('#modeBar [data-mode]').forEach(function(b){var on=b.dataset.mode===m;b.classList.toggle('on',on);b.classList.toggle('go',on)});
+ $('pageSub').innerHTML=PAGE_SUB[m];$('howto').innerHTML=HOWTO[m];$('obsIntro').innerHTML=OBSI[m];$('detIntro').innerHTML=DETI[m];$('detChips').innerHTML=DETC[m];$('lgRep').innerHTML=LGR[m];
+ $('fn').value=TXT[m]||(m==='meta'?CASE:'');
+ $('fn').placeholder=m==='gen'?'Paste the company\u2019s financial footnotes here...':'Paste financial statement footnotes here...';
+ $('caseNote').style.display=(m==='meta'&&$('fn').value===CASE)?'block':'none';
+ analyze();
+ if(m==='meta')renderScenarios();
+ detRender()}
+document.querySelectorAll('#modeBar [data-mode]').forEach(function(b){b.onclick=function(){setMode(b.dataset.mode)}});
+['gName','gYear','gD','gE'].forEach(function(k){$(k).addEventListener('input',function(){$('gMsg').textContent='';detRender()})});
+$('gDemo').onclick=function(){
+ $('gName').value='Example Co. (fictional)';$('gYear').value='2025';$('gD').value=100;$('gE').value=200;
+ $('fn').value='Example Co. is a fictional company used only to demonstrate this tool. We have entered into data center lease commitments of $20 billion that have not yet commenced.';
+ $('gMsg').textContent='Fictional example loaded: made-up figures for demonstration only. Select the $20 billion lease commitment in Detected Amounts and confirm it as an incremental debt stress test.';
+ analyze()};
+/* preload the editable Meta-Hyperion sample after all handlers are defined */
+$('fn').value=CASE;$('caseNote').style.display='block';analyze();
+</script>
+</body>
+</html>
